@@ -1,0 +1,144 @@
+TO DO:
+	* Most ColorConsole use needs to be replaced with StringBuilders containing color codes
+	* OutputTokenizer needs to replace color coded text with text chunks enumerated against the output type (e.g. Info/Error/Success/etc.)
+		* output can be written using monospaced HTML
+		* output can be written to the console
+		* because text is tokenized according to purpose, it can easily be written out as plain text (for logging purposes)
+	* ConsoleWriter needs to write tokenized output colorised to the console
+		* [LATER] Table-formatted text can use a utility class TextTableWriter writes out a table/color-formatted text string formatted to fit the console.
+			|=|%*header1|=|%*header2|=|%*header3
+			|!|%@cell1%@ woot|!|cell2|!|cell3
+			|!|cell14|!|cell15|!|%~cell16%~
+			* color codes inside cells are automatically terminated when the cell closes.
+			* header cell is designated as such so text formatter can write dashes underneath headings
+	* Application needs to become a service console API
+		* ExecuteCommand and Handler delegates should return CommandResult, not string
+		* Notifications should be pushed out via a C# event and can contain color codes
+			- Source (Console/Service)
+			- Disposition
+			- Message
+		* Use Logger to trace all console activity (can enable/disable logging as needed)
+	* Program class needs to hook Application events and write console output
+
+--------------------------------------------------------------------------------
+
+ServerX
+	Contains ServerX control functionality. Launched from either Service or
+	directly from ServiceConsole (for testing purposes). Can have as many
+	dependencies as needed as it won't be referenced externally, such as by
+	web applications.
+
+ServerX.Common
+	WCF contracts required for interaction with the service and extensions. Also
+	has any WCF client implementations. This should never have any external
+	dependencies. This is the assembly to reference externally (such as by web
+	applications) in order to interact with the service.
+
+ServerX.ServiceConsole
+	Console application for interacting with the service and its extensions.
+
+ServerX.Service
+	The windows service to host the main ServerX WCF service.
+
+ServerX.ExtensionRunner
+	Used internally to launch service extensions.
+
+--------------------------------------------------------------------------------
+
+Mono.Options Documentation
+	http://www.ndesk.org/doc/ndesk-options/NDesk.Options/OptionSet.html
+	http://tirania.org/blog/archive/2008/Oct-14.html
+
+Crontab Syntax:
+	http://code.google.com/p/ncrontab/wiki/CrontabExpression
+
+--------------------------------------------------------------------------------
+
+Console Strings - Color Coding
+
+   %@ - user input (something the user can type somewhere) - yellow
+   %* - heading - bright white
+   %! - error - red
+   %? - information - cyan
+   %~ - success message - green
+   %# - example - dark magenta
+   %> - sets default indent for wrapping
+
+Here's an example colour-coded help text:
+
+%*Usage:%*
+  %@mode [arg]%@
+
+%*Arguments:%*
+  %@direct%@  - %>The server should run directly (no WCF/TCP required)
+  %@local%@   - %>The server should run locally (WCF over TCP)
+  %@remote%@  - %>The server should be running remotely (WCF)
+
+%?Type %@mode%@ by itself to see what the current mode is.%?
+
+--------------------------------------------------------------------------------
+
+Features Desired:
+- crontab scheduling
+- javascript scripting support
+- piped output/formatting
+
+API scenarios:
+	command line \
+	javascript    --> expose an object
+	WCF          /
+
+	## plugins:
+		include /[dir]
+		exclude /[dir]
+		enable [plugin]
+		disable [plugin]
+		[re]start /[dir]
+		[re]start [plugin]
+		stop /[dir]
+		stop [plugin]
+	plugins --include:name --enable:name --start:name
+		order of processing is the order in which the args appear
+
+	## scripts
+	scripts --add:filename --exec:filename --delete:filename --display:filename --list
+
+	local script example: 
+
+		console.EnableLogging(true);
+		console.StartService(true, true);
+		var plugins = console.ListPlugins();
+		for(var plugin in plugins)
+			console.out(plugin.Name);
+		var response = svc.ExecuteCommand('list -c arg1 "hello world"');
+		console.out(response);
+		if(svc.RestartPlugin('test1'))
+			console.out('done.');
+		var plugins = console.ListPlugins();
+	
+	server script example:
+		svc.NotifyClients('yay!');
+
+	MACROS:
+
+		#set install execscr -local install.js
+		!install
+		#del install
+		#list
+		
+--------------------------------------------------------------------------------
+
+Commands:
+
+	exit
+	help
+	list
+	plugins
+	svc start
+	svc stop
+	svc status
+	svc connect
+	cron list
+	cron del 1
+	cron add * * * * */5 !list
+
