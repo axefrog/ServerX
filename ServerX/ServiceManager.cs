@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -33,7 +34,7 @@ namespace ServerX
 
 		private void StartExtensions()
 		{
-			foreach(var line in File.ReadLines(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config", "extensions.txt")))
+			foreach(var line in File.ReadLines(Path.Combine(ConfigurationManager.AppSettings["DataDirectory"] ?? Environment.CurrentDirectory, "Config", "extensions.txt")))
 			{
 				var s = Regex.Replace((line ?? "").Trim(), @"\t+", "\t");
 				if(string.IsNullOrWhiteSpace(s) || s.StartsWith("#"))

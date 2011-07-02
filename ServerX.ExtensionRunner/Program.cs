@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -16,6 +17,7 @@ namespace ServerX.ExtensionRunner
 		{
 			string subdir = null;
 			var baseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extensions");
+			Environment.CurrentDirectory = ConfigurationManager.AppSettings["DataDirectory"] ?? AppDomain.CurrentDomain.BaseDirectory;
 			var plugins = new HashSet<string>();
 			Process process = null;
 			Guid guid = Guid.Empty;
@@ -90,7 +92,7 @@ namespace ServerX.ExtensionRunner
 					foreach(var plugin in loader.AllExtensions)
 						Console.WriteLine(plugin.ID + ": " + plugin.Name + " [" + (plugins.Count == 0 || plugins.Contains(plugin.ID) ? "ACTIVE" : "INACTIVE") + "]");
 					Console.WriteLine("<end of plugins list>");
-					loader.RunExtensions(plugins.ToArray());
+					loader.RunExtensions(guid, plugins.ToArray());
 				}
 			}
 			catch(OptionException ex)

@@ -71,7 +71,6 @@
   <ItemGroup>
     <Compile Include="CommandRunner.cs" />
     <Compile Include="ExtensionRunnerExitCode.cs" />
-    <Compile Include="Logger.cs" />
     <Compile Include="ExtensionProcessManager.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="PersistenceManager.cs" />

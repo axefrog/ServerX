@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration;
 using System.IO;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -70,7 +71,7 @@ namespace ServerX
 		{
 			_createConfigObject = createConfigObject;
 			_serializer = serializer;
-			_settingsPath = settingsPath;
+			_settingsPath = settingsPath ?? ConfigurationManager.AppSettings["DataDirectory"];
 			bool isNew;
 			_mutex = new Mutex(false, "Global.ServerX.PersistenceManager", out isNew, _mutexsecurity);
 			_mutexCfgFile = new Mutex(false, "Global.ServerX.PersistenceManager." + configName, out isNew, _mutexsecurity);
@@ -78,7 +79,7 @@ namespace ServerX
 			_mutex.WaitOne();
 			try
 			{
-				var dir = new DirectoryInfo(_settingsPath ?? string.Format("{0}\\Config", AppDomain.CurrentDomain.BaseDirectory));
+				var dir = new DirectoryInfo(_settingsPath ?? string.Format("{0}\\Config", ConfigurationManager.AppSettings["DataDirectory"] ?? Environment.CurrentDirectory));
 				if(!dir.Exists)
 					dir.Create();
 				_cfgFilePath = Path.Combine(dir.FullName, configName + ".cfg");

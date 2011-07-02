@@ -22,26 +22,19 @@ namespace SamplePlugin2
 			get { return "This is the second of two sample plugin projects"; }
 		}
 
-		public string JsonCall(string name, string data)
+		bool _isRunning;
+		public void Run(CancellationToken token)
 		{
-			throw new NotImplementedException();
-		}
-
-		public string Command(string name, string[] args)
-		{
-			throw new NotImplementedException();
-		}
-
-		public void Run()
-		{
+			_isRunning = true;
 			Console.WriteLine("Sample2 is running.");
 			Console.WriteLine("Test: " + ConfigurationManager.AppSettings["Test"]);
 			Thread.Sleep(5000);
+			_isRunning = false;
 		}
 
 		public bool IsRunning
 		{
-			get { return true; }
+			get { return _isRunning; }
 		}
 
 		public void Dispose()

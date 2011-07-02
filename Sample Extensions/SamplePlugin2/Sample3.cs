@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using ServerX.Common;
 
 namespace SamplePlugin2
@@ -20,17 +21,7 @@ namespace SamplePlugin2
 			get { return "This is the third of three sample plugin projects"; }
 		}
 
-		public string JsonCall(string name, string data)
-		{
-			throw new NotImplementedException();
-		}
-
-		public string Command(string name, string[] args)
-		{
-			throw new NotImplementedException();
-		}
-
-		public void Run()
+		public void Run(CancellationToken token)
 		{
 			Console.WriteLine("Sample3 is running.");
 		}

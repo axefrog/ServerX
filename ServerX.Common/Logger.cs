@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 
-namespace ServerX
+namespace ServerX.Common
 {
 	public class Logger : IDisposable
 	{
@@ -28,7 +28,7 @@ namespace ServerX
 
 		void UpdatePath()
 		{
-			var dirpath = ConfigurationManager.AppSettings["DataDirectory"] ?? AppDomain.CurrentDomain.BaseDirectory;
+			var dirpath = ConfigurationManager.AppSettings["DataDirectory"] ?? Environment.CurrentDirectory;
 			_path = Path.Combine(dirpath, "Logs", DateTime.UtcNow.ToString("yyyy-MM-dd"), _name + ".log");
 			var dir = new FileInfo(_path).Directory;
 			using(var mutex = new Mutex(false, "Global.ServerX.Logger." + dir.FullName.GetHashCode()))

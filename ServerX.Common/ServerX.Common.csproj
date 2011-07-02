@@ -50,6 +50,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
@@ -63,6 +64,7 @@
     <Compile Include="Command.cs" />
     <Compile Include="CommandInfo.cs" />
     <Compile Include="CommandResponse.cs" />
+    <Compile Include="Logger.cs" />
     <Compile Include="ServerExtensionsActivator.cs" />
     <Compile Include="SafeExtensionLoader.cs" />
     <Compile Include="TextFormatter.cs" />

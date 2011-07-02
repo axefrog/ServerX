@@ -17,7 +17,7 @@ namespace ServerX.ServiceConsole
 		{
 			Console.BufferWidth = 120;
 			Console.WindowWidth = 120;
-			Environment.CurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
+			Environment.CurrentDirectory = ConfigurationManager.AppSettings["DataDirectory"] ?? AppDomain.CurrentDomain.BaseDirectory;
 			AppDomain.CurrentDomain.UnhandledException += OnCurrentDomainUnhandledException;
 			using(var container = new CompositionContainer(new AggregateCatalog(
 				new DirectoryCatalog(AppDomain.CurrentDomain.BaseDirectory, "*.exe"),

@@ -1,3 +1,19 @@
+N   N EEEEE X   X TTTTT
+NN  N E      X X    T
+N N N EEEEE   X     T
+N  NN E      X X    T
+N   N EEEEE X   X   T
+
+NEXT:
+	ServerExtensionsActivator:
+	- each call to .Run() should be done from within a separate Task
+	- all tasks should use the same cancellation token, which should be passed to each extension in Run()
+	- a loop should then run checking IsRunning on all tasks and signalling the service manager every few seconds
+	- if any IsRunning = false, log the details, signal the service manager once more, request cancellation and exit
+	- look at the windows service global exception trappers and duplicate in ExtensionRunner
+
+--------------------------------------------------------------------------------
+
 TO DO:
 	* Most ColorConsole use needs to be replaced with StringBuilders containing color codes
 	* OutputTokenizer needs to replace color coded text with text chunks enumerated against the output type (e.g. Info/Error/Success/etc.)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using ServerX.Common;
 
 namespace SamplePlugin1
@@ -23,19 +24,13 @@ namespace SamplePlugin1
 			get { return "This is the first of three sample plugin projects"; }
 		}
 
-		public string JsonCall(string name, string data)
+		public void Run(CancellationToken token)
 		{
-			throw new NotImplementedException();
-		}
-
-		public string Command(string name, string[] args)
-		{
-			throw new NotImplementedException();
-		}
-
-		public void Run()
-		{
-			Console.WriteLine("Sample1 is running.");
+			while(!token.IsCancellationRequested)
+			{
+				Console.WriteLine("Sample1 is running. " + DateTime.UtcNow);
+				Thread.Sleep(5000);
+			}
 		}
 
 		public bool IsRunning
