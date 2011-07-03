@@ -51,9 +51,6 @@
     <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="IronJS, Version=0.2.1.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\Dependencies\IronJS.dll</HintPath>
-    </Reference>
     <Reference Include="NCrontab, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\Dependencies\NCrontab.dll</HintPath>
     </Reference>
