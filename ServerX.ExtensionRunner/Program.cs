@@ -33,7 +33,7 @@ namespace ServerX.ExtensionRunner
 					}
 				},
 				{ "basedir=", "Specifies the base plugins directory (can be relative or absolute)", v => baseDir = Path.IsPathRooted(v) ? v : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, v) },
-				{ "subdir=", "Specifies the extenion subdirectory name", v => subdir = v },
+				{ "subdir=", "Specifies the extension subdirectory name", v => subdir = v },
 				{ "pid=", "Parent process ID - if specified, this process will close when the parent process closes", v =>
 					{
 						int pid;
