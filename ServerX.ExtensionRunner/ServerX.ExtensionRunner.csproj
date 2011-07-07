@@ -66,6 +66,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\ServerX.Common\ServerX.Common.csproj">
       <Project>{9237CC64-970E-48B7-BC2B-5B8EAA304766}</Project>
       <Name>ServerX.Common</Name>
@@ -74,9 +79,6 @@
       <Project>{90B6C889-2D15-4F8A-8DF2-2BDE2C32D202}</Project>
       <Name>ServerX %28Server Application\ServerX\ServerX%29</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

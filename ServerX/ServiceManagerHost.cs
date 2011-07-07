@@ -7,6 +7,7 @@ using ServerX.Common;
 
 namespace ServerX
 {
+	[ServiceBehavior(ConcurrencyMode = ConcurrencyMode.Multiple, InstanceContextMode = InstanceContextMode.Single, UseSynchronizationContext = true, IncludeExceptionDetailInFaults = true)]
 	public class ServiceManagerHost : IServiceManagerHost
 	{
 		ServiceManager _service;
@@ -179,6 +180,11 @@ namespace ServerX
 		public void KeepExtensionProcessAlive(Guid id)
 		{
 			_service.KeepExtensionProcessAlive(id);
+		}
+
+		public void NotifyExtensionServiceReady(string address)
+		{
+			_service.NotifyExtensionServiceReady(address);
 		}
 
 		public void Dispose()

@@ -311,6 +311,11 @@ namespace Server
 		{
 			Channel.KeepExtensionProcessAlive(id);
 		}
+
+		public void NotifyExtensionServiceReady(string address)
+		{
+			Channel.NotifyExtensionServiceReady(address);
+		}
 	}
 
 	public delegate void ServiceManagerClientDisconnectedHandler(ServiceManagerClient client);

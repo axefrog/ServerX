@@ -13,6 +13,9 @@ namespace ServerX.Common
 		private readonly bool _preventDateSplitting;
 		private readonly Mutex _mutex;
 		private string _path;
+
+		public bool WriteToConsole { get; set; }
+
 		/// <summary>
 		/// Constructs a new Logger instance
 		/// </summary>
@@ -57,6 +60,8 @@ namespace ServerX.Common
 			{
 				if(DateTime.UtcNow > _lastWrite.AddMinutes(5))
 					o = "-------------- " + DateTime.UtcNow + " --------------\r\n" + o;
+				if(WriteToConsole)
+					Console.Write(o);
 				File.AppendAllText(_path, o.ToString());
 			}
 			catch

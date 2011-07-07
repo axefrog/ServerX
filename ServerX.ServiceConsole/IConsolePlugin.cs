@@ -1,6 +1,4 @@
-﻿using Server.ClientConsole;
-
-namespace ServerX.ServiceConsole
+﻿namespace ServerX.ServiceConsole
 {
 	public interface IConsolePlugin
 	{

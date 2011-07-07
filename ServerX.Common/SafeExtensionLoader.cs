@@ -15,11 +15,13 @@ namespace ServerX.Common
 			var setup = new AppDomainSetup
 			{
 				ApplicationBase = _extensionsPath,
+				PrivateBinPath = _extensionsPath,
 				ShadowCopyFiles = "true",
-				ShadowCopyDirectories = extensionsBaseDir
+				ShadowCopyDirectories = _extensionsPath
 			};
 			_appdomain = AppDomain.CreateDomain("ExtensionDirectoryLoader." + subdirName, null, setup);
 			_exts = (IExtensionsActivator)_appdomain.CreateInstanceAndUnwrap("ServerX.Common", "ServerX.Common.ExtensionsActivator");
+			_exts.Init(subdirName);
 		}
 
 		public ExtensionInfo[] AllExtensions

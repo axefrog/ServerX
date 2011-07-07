@@ -65,7 +65,8 @@
     <Compile Include="CommandInfo.cs" />
     <Compile Include="CommandResponse.cs" />
     <Compile Include="Logger.cs" />
-    <Compile Include="ServerExtensionsActivator.cs" />
+    <Compile Include="ServerExtension.cs" />
+    <Compile Include="ExtensionsActivator.cs" />
     <Compile Include="SafeExtensionLoader.cs" />
     <Compile Include="TextFormatter.cs" />
     <Compile Include="IServiceManagerHost.cs" />

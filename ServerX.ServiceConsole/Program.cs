@@ -6,7 +6,6 @@ using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
-using Server.ClientConsole;
 
 namespace ServerX.ServiceConsole
 {

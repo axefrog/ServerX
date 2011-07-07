@@ -21,6 +21,7 @@ namespace ServerX.ExtensionRunner
 			var plugins = new HashSet<string>();
 			Process process = null;
 			Guid guid = Guid.Empty;
+			Logger logger = null;
 
 			var options = new OptionSet
 			{
@@ -47,31 +48,46 @@ namespace ServerX.ExtensionRunner
 						{
 							throw new OptionException(ex.Message, "pid");
 						}
+						if(process == null)
+							throw new OptionException("There is no process with ID [" + pid + "]", "pid");
 					}
 				},
 				{ "<>", v => plugins.Add(v) }
 			};
 
 			CancellationTokenSource src = new CancellationTokenSource();
-			if(process != null)
-			{
-				Task.Factory.StartNew(() =>
-				{
-					while(!src.IsCancellationRequested)
-					{
-						if(process.HasExited)
-						{
-							Exit(src, ExtensionRunnerExitCode.ParentExited);
-							return;
-						}
-						Thread.Sleep(100);
-					}
-				});
-			}
-
 			try
 			{
 				options.Parse(args);
+
+				logger = new Logger("extension-" + subdir) { WriteToConsole = process == null };
+				logger.WriteLines(
+					"ExtensionRunner Started:",
+					"	=> Command Line: " + Environment.CommandLine,
+					"	=> Subdirectory: " + subdir,
+					"	=> Base Directory: " + baseDir,
+					"	=> Specified Plugins: " + plugins.Concat(", "),
+					"	=> GUID: " + guid,
+					"	=> Parent Process ID: " + (process == null ? "(none)" : process.Id.ToString())
+				);
+
+				if(process != null)
+				{
+					Task.Factory.StartNew(() =>
+					{
+						while(!src.IsCancellationRequested)
+						{
+							process.Refresh();
+							if(process.HasExited)
+							{
+								logger.WriteLine("Detected parent process shutdown.");
+								Exit(logger, src, ExtensionRunnerExitCode.ParentExited);
+								return;
+							}
+							Thread.Sleep(250);
+						}
+					});
+				}
 
 				// Read directory name and optional list of plugins to load
 				if(subdir == null)
@@ -81,40 +97,42 @@ namespace ServerX.ExtensionRunner
 					if(string.IsNullOrWhiteSpace(subdir))
 					{
 						Console.WriteLine("No plugin directory specified.");
-						Exit(src, ExtensionRunnerExitCode.InvalidArguments);
+						Exit(logger, src, ExtensionRunnerExitCode.InvalidArguments);
 					}
 				}
 
 				// Verify that all plugins are available and if so, run them
 				using(var loader = new SafeExtensionLoader(baseDir, subdir))
 				{
-					Console.WriteLine("<list of all plugins>");
+					logger.WriteLine("[list of all plugins]");
 					foreach(var plugin in loader.AllExtensions)
-						Console.WriteLine(plugin.ID + ": " + plugin.Name + " [" + (plugins.Count == 0 || plugins.Contains(plugin.ID) ? "ACTIVE" : "INACTIVE") + "]");
-					Console.WriteLine("<end of plugins list>");
+						logger.WriteLine("\t" + plugin.ID + ": " + plugin.Name + " [" + (plugins.Count == 0 || plugins.Contains(plugin.ID) ? "ACTIVE" : "INACTIVE") + "]");
+					logger.WriteLine("[end of plugins list]");
 					loader.RunExtensions(guid, plugins.ToArray());
 				}
 			}
 			catch(OptionException ex)
 			{
-				Console.WriteLine("Invalid command options: " + ex.Message);
-				Console.WriteLine(options.WriteOptionDescriptions());
-				Exit(src, ExtensionRunnerExitCode.Exception);
+				if(logger != null)
+					logger.WriteLines("Invalid command options: " + ex.Message, options.WriteOptionDescriptions());
+				Exit(logger, src, ExtensionRunnerExitCode.Exception);
 			}
 			catch(Exception ex)
 			{
-				Console.WriteLine(ex.ToString());
-				Exit(src, ExtensionRunnerExitCode.Exception);
+				if(logger != null)
+					logger.WriteLine(ex.ToString());
+				Exit(logger, src, ExtensionRunnerExitCode.Exception);
 			}
 			finally
 			{
-				Exit(src, ExtensionRunnerExitCode.Success);
+				Exit(logger, src, ExtensionRunnerExitCode.Success);
 			}
 		}
 
-		static void Exit(CancellationTokenSource src, ExtensionRunnerExitCode exitCode)
+		static void Exit(Logger logger, CancellationTokenSource src, ExtensionRunnerExitCode exitCode)
 		{
-			Console.WriteLine("Done - exiting.");
+			if(logger != null)
+				logger.WriteLine("Exiting (code: " + exitCode + ")");
 			src.Cancel();
 			Environment.Exit((int)exitCode);
 		}

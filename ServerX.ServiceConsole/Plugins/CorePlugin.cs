@@ -4,7 +4,6 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using Mono.Options;
-using Server.ClientConsole;
 
 namespace ServerX.ServiceConsole.Plugins
 {

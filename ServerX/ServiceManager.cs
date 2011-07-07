@@ -34,7 +34,10 @@ namespace ServerX
 
 		private void StartExtensions()
 		{
-			foreach(var line in File.ReadLines(Path.Combine(ConfigurationManager.AppSettings["DataDirectory"] ?? Environment.CurrentDirectory, "Config", "extensions.txt")))
+			var cfgPath = Path.Combine(ConfigurationManager.AppSettings["DataDirectory"] ?? Environment.CurrentDirectory, "Config", "extensions.txt");
+			if(!File.Exists(cfgPath))
+				throw new Exception("Unable to start extensions. There must be a Config subdirectory containing a file extensions.txt. The file must contain zero or more lines, each starting with the name of a subdirectory inside the Extensions subdirectory, optionally followed by a tab and then a comma-delimited list of server extension IDs to load");
+			foreach(var line in File.ReadLines(cfgPath))
 			{
 				var s = Regex.Replace((line ?? "").Trim(), @"\t+", "\t");
 				if(string.IsNullOrWhiteSpace(s) || s.StartsWith("#"))
@@ -159,6 +162,11 @@ namespace ServerX
 		public void KeepExtensionProcessAlive(Guid id)
 		{
 			_extMgr.KeepAlive(id);
+		}
+
+		public void NotifyExtensionServiceReady(string address)
+		{
+			
 		}
 
 		public virtual void Dispose()

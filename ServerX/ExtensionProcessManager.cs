@@ -82,7 +82,7 @@ namespace ServerX
 			};
 			_logger.WriteLine("Starting new process for extensions in /" + dirName + " - " + info.ID + " (" + (extensionIDs.Length == 0 ? "all" : extensionIDs.Concat(", ")) + ")");
 			var cmdargs = string.Format(
-				"-subdir \"{0}\" -basedir \"{1}\" -pid:{2} -guid \"{3}\"{4}",
+				"-subdir \"{0}\" -basedir \"{1}\" -pid={2} -guid \"{3}\"{4}",
 				dirName, _extensionsBasePath, Process.GetCurrentProcess().Id, info.ID, extensionIDs.Concat(s => " " + s)
 			);
 			var psi = new ProcessStartInfo(_launcherExePath, cmdargs)

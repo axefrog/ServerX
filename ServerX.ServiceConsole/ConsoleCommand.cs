@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using Server.ClientConsole;
 using ServerX.Common;
 
 namespace ServerX.ServiceConsole

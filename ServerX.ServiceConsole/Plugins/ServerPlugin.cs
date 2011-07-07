@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Web.Script.Serialization;
 using Mono.Options;
-using Server.ClientConsole;
 using ServerX.Service;
 
 namespace ServerX.ServiceConsole.Plugins
@@ -28,9 +27,16 @@ namespace ServerX.ServiceConsole.Plugins
 		class ServiceCommandParams
 		{
 			public int Port = DefaultPort;
-			public string Action = "status";
+			public ServiceAction Action = ServiceAction.Status;
 			public bool Local = false;
 			public bool AutoConnect = false;
+		}
+
+		private enum ServiceAction
+		{
+			Status,
+			Install,
+			Uninstall
 		}
 
 		class ConnectCommandParams
@@ -53,27 +59,27 @@ namespace ServerX.ServiceConsole.Plugins
 						prms.AutoConnect = true;
 					}
 				},
+				{ "install|i", "Requests that the service be activated", v =>
+					{
+						prms.Action = ServiceAction.Install;
+					}
+				},
+				{ "uninstall|u", "Requests that the service be activated", v =>
+					{
+						prms.Action = ServiceAction.Uninstall;
+					}
+				},
+				{ "status|s", "Display the service status", v =>
+					{
+						prms.Action = ServiceAction.Status;
+					}
+				},
 				{ "port|p=", "Specifies the port on which the service manager will listen for connections", v =>
 					{
 						int port;
 						if(!int.TryParse(v, out port))
 							throw new OptionException("The port must be an integer", "-p");
 						prms.Port = port;
-					}
-				},
-				{ "<>", "Specify %@status%@, %@start%@ or %@stop%@.", v =>
-					{
-						v = v.ToLower();
-						switch(v)
-						{
-							case "status":
-							case "start":
-							case "stop":
-								prms.Action = v;
-								break;
-							default:
-								throw new OptionException("Unknown command action: " + v, "<>");
-						}
 					}
 				},
 			};
@@ -126,10 +132,10 @@ namespace ServerX.ServiceConsole.Plugins
 
 					switch(prms.Action)
 					{
-						case "status":
+						case ServiceAction.Status:
 							return null;
 
-						case "start":
+						case ServiceAction.Install:
 							File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServiceParams.txt"), new JavaScriptSerializer().Serialize(new ServiceInstallParams
 							{
 								Port = prms.Port
@@ -143,7 +149,7 @@ namespace ServerX.ServiceConsole.Plugins
 								return app.Connect("localhost", prms.Port);
 							return null;
 
-						case "stop":
+						case ServiceAction.Uninstall:
 							if(!prms.Local && !app.IsWindowsServiceRunning)
 								return "%!Can't uninstall; service is not installed.";
 							return app.StopHost() ? "%~Service uninstalled successfully." : "%!Service uninstallation failed.";

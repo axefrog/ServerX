@@ -4,12 +4,11 @@ using System.IO;
 using System.Linq;
 using System.ServiceModel;
 using System.Text.RegularExpressions;
-using ServerX;
+using Server;
 using ServerX.Common;
 using ServerX.Service;
-using ServerX.ServiceConsole;
 
-namespace Server.ClientConsole
+namespace ServerX.ServiceConsole
 {
 	public class Application : IDisposable
 	{
@@ -87,7 +86,6 @@ namespace Server.ClientConsole
 			try
 			{
 				_client.RegisterClient();
-				var p = _client.ListExtensionsInDirectory("Sample1");
 			}
 			catch(EndpointNotFoundException)
 			{

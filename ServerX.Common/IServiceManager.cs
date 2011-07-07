@@ -71,5 +71,8 @@ namespace ServerX.Common
 
 		[OperationContract]
 		void KeepExtensionProcessAlive(Guid id);
+
+		[OperationContract]
+		void NotifyExtensionServiceReady(string address);
 	}
 }
