@@ -199,13 +199,21 @@ namespace ServerX.ServiceConsole.Plugins
 				HelpDescription = "Displays a list of available commands. This command has no arguments.",
 				Handler = (app, command, args) =>
 				{
-					var cmdlen = app.CommandsByTitle.Values.Max(c => c.CommandAliases.First().Length);
+					if(app.Client == null)
+						return "%!Cannot list server commands while disconnected.";
 
-					Console.WriteLine();
-					ColorConsole.WriteLine("Console Commands:", ConsoleColor.White);
-					Console.WriteLine();
-					foreach(var cmd in app.CommandsByTitle.Values.OrderBy(p => p.CommandAliases.First()))
-						ColorConsole.WriteLinesLabelled(cmd.CommandAliases.First(), cmdlen, ConsoleColor.Yellow, cmd.Description);
+					var list = app.Client.ListCommands();
+					if(list.Length == 0)
+						ColorConsole.WriteLine("%!There are no available server commands. Extensions may still be initialising.");
+					else
+					{
+						var cmdlen = list.Max(c => c.CommandID.Length);
+						Console.WriteLine();
+						ColorConsole.WriteLine("Server Commands:", ConsoleColor.White);
+						Console.WriteLine();
+						foreach(var cmd in list)
+							ColorConsole.WriteLinesLabelled(cmd.CommandID, cmdlen, ConsoleColor.Yellow, cmd.Description);
+					}
 
 					Console.WriteLine();
 					ColorConsole.WriteLine("%?Type %@help [command]%@ for help on specific commands%?");

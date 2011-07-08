@@ -40,7 +40,7 @@ namespace ServerX.Common
 			};
 		}
 
-		public event ServerExtensionCallback.ExtensionNotificationHandler ExtensionNotificationReceived;
+		public event ServiceManagerCallback.ExtensionNotificationHandler ExtensionNotificationReceived;
 		public event ServiceCallbackBase.NotificationHandler NotificationReceived;
 
 		public DateTime GetServerTime()
@@ -98,7 +98,7 @@ namespace ServerX.Common
 			return Channel.ExecuteCommand(command, args);
 		}
 
-		public CommandInfo ListCommands()
+		public ExtensionInfo[] ListCommands()
 		{
 			return Channel.ListCommands();
 		}

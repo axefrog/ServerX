@@ -6,18 +6,23 @@ using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using ServerX.Common;
 
 namespace ServerX.ServiceConsole
 {
 	[Export]
 	class Program : IDisposable
 	{
+		static Logger _logger = new Logger("console-exceptions");
 		static void Main(string[] args)
 		{
 			Console.BufferWidth = 120;
 			Console.WindowWidth = 120;
 			Environment.CurrentDirectory = ConfigurationManager.AppSettings["DataDirectory"] ?? AppDomain.CurrentDomain.BaseDirectory;
-			AppDomain.CurrentDomain.UnhandledException += OnCurrentDomainUnhandledException;
+			AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
+			TaskScheduler.UnobservedTaskException += OnTaskSchedulerUnobservedTaskException;
+
 			using(var container = new CompositionContainer(new AggregateCatalog(
 				new DirectoryCatalog(AppDomain.CurrentDomain.BaseDirectory, "*.exe"),
 				new DirectoryCatalog(AppDomain.CurrentDomain.BaseDirectory, "*.dll"))))
@@ -29,10 +34,14 @@ namespace ServerX.ServiceConsole
 			}
 		}
 
-		static void OnCurrentDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
+		static void OnTaskSchedulerUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
 		{
-			Exception ex = e.ExceptionObject as Exception;
-			File.AppendAllText("error.log", DateTime.UtcNow + ": " + ex.Message + Environment.NewLine + ex.StackTrace + Environment.NewLine + Environment.NewLine);
+			_logger.Write("UNTRAPPED TASK EXCEPTION:\r\n" + e.Exception);
+		}
+
+		static void OnAppDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
+		{
+			_logger.Write("UNTRAPPED SERVICE EXCEPTION:\r\n" + e.ExceptionObject);
 		}
 
 		private Application _app;

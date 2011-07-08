@@ -89,26 +89,25 @@ namespace ServerX.ServiceConsole
 			}
 		}
 
-		private ServiceManagerClient _client;
 		public string Connect(string address, int port)
 		{
-			if(_client != null && _client.State == CommunicationState.Opened)
-				_client.Abort();
+			if(Client != null && Client.State == CommunicationState.Opened)
+				Client.Abort();
 				
-			_client = new ServiceManagerClient(address, port);
+			Client = new ServiceManagerClient(address, port);
 			try
 			{
-				_client.RegisterClient();
+				Client.RegisterClient();
 			}
 			catch(EndpointNotFoundException)
 			{
 				return "%!Unable to connect to " + address + ":" + port;
 			}
-			_client.Disconnected += OnServiceDisconnected;
-			_client.NotificationReceived += OnNotificationReceived;
-			_client.ExtensionNotificationReceived += OnExtensionNotificationReceived;
+			Client.Disconnected += OnServiceDisconnected;
+			Client.NotificationReceived += OnNotificationReceived;
+			Client.ExtensionNotificationReceived += OnExtensionNotificationReceived;
 
-			var dt = _client.GetServerTime();
+			var dt = Client.GetServerTime();
 			return "%~Connected. Server time is " + dt + ".";
 		}
 
@@ -128,7 +127,7 @@ namespace ServerX.ServiceConsole
 
 		void OnServiceDisconnected(ServiceManagerClient psc)
 		{
-			_client = null;
+			Client = null;
 		}
 
 		public bool StartHost(int port, bool local = false)
@@ -191,6 +190,8 @@ namespace ServerX.ServiceConsole
 		    get { return File.Exists(AppDomain.CurrentDomain.BaseDirectory + "\\Service.InstallState"); }
 		}
 
+		public ServiceManagerClient Client { get; private set; }
+
 		public void AddMacro(string name, string command)
 		{
 			_settings.Values.AddMacro(name, command);
@@ -212,7 +213,7 @@ namespace ServerX.ServiceConsole
 		{
 		}
 
-		public event ServerExtensionCallback.ExtensionNotificationHandler ExtensionNotificationReceived;
+		public event ServiceManagerCallback.ExtensionNotificationHandler ExtensionNotificationReceived;
 		public event ServiceCallbackBase.NotificationHandler NotificationReceived;
 	}
 

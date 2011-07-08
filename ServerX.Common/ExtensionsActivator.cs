@@ -114,6 +114,9 @@ namespace ServerX.Common
 						};
 						foreach(var ext in _runningExtensions.Values)
 						{
+							// Don't notify the server until Run has been called, otherwise the extension's Logger won't be available
+							while(!ext.Extension.RunCalled)
+								Thread.Sleep(250);
 							_logger.WriteLine("[MONITOR] Sending extension connection address: " + ext.Address);
 							client.NotifyExtensionServiceReady(ext.Address);
 						}

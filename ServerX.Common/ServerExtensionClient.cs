@@ -54,20 +54,17 @@ namespace ServerX.Common
 
 		protected override void InitCallback(ServerExtensionCallback callback)
 		{
-			
+			callback.NotificationReceived += msg =>
+			{
+				var handler = NotificationReceived;
+				if(handler != null)
+					handler(msg);
+			};
 		}
+		public event ServiceCallbackBase.NotificationHandler NotificationReceived;
 	}
 
 	public class ServerExtensionCallback : ServiceCallbackBase, IServerExtensionCallback
 	{
-		public void Notify(string extID, string extName, string message)
-		{
-			var handler = ExtensionNotificationReceived;
-			if(handler != null)
-				handler(extID, extName, message);
-		}
-
-		public delegate void ExtensionNotificationHandler(string extID, string extName, string message);
-		public event ExtensionNotificationHandler ExtensionNotificationReceived;
 	}
 }

@@ -44,7 +44,8 @@ namespace ServerX.Common
 			Construct(callback);
 		}
 
-		protected ClientBase(object callbackInstance, Binding binding, EndpointAddress remoteAddress) : base(callbackInstance, binding, remoteAddress)
+		protected ClientBase(object callbackInstance, Binding binding, EndpointAddress remoteAddress)
+			: base(callbackInstance, binding, remoteAddress)
 		{
 			Construct((TCallback)callbackInstance);
 		}
@@ -78,7 +79,6 @@ namespace ServerX.Common
 
 		void OnInnerDuplexChannelFaulted(object sender, EventArgs e)
 		{
-			
 			OnDisconnected();
 			_keepAliveTimer.Stop();
 		}

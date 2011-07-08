@@ -18,6 +18,8 @@ namespace ServerX
 		{
 			_exlogger = new Logger("servicemanager-exceptions");
 			_service = new ServiceManager();
+			_service.ExtensionNotificationReceived += (extID, extName, message) => CallbackEachClient(c => c.ServerExtensionNotify(extID, extName, message));
+
 			_timer = new Timer(1000);
 			_timer.Elapsed += (s,e) => CallbackEachClient(cb => cb.ServiceManagerNotify("Test."));
 			_timer.Start();
@@ -133,7 +135,7 @@ namespace ServerX
 			return _service.ExecuteCommand(command, args);
 		}
 
-		public CommandInfo ListCommands()
+		public ExtensionInfo[] ListCommands()
 		{
 			return _service.ListCommands();
 		}

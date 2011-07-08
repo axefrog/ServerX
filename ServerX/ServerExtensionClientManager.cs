@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using ServerX.Common;
 
@@ -11,19 +12,23 @@ namespace ServerX
 
 		private class ClientInfo : ExtensionInfo
 		{
+			[IgnoreDataMember]
 			public ServerExtensionClient Client { get; set; }
 		}
 
 		public bool TryConnect(string address)
 		{
-			var client = new ServerExtensionClient(address);
 			var info = new ClientInfo();
+			ServerExtensionClient client;
 			try
 			{
+				client = new ServerExtensionClient(address);
+				client.RegisterClient();
 				info.ID = client.ID;
 				info.CommandID = Regex.Replace(client.CommandID ?? "", @"\s+", "").ToLower();
 				info.Name = client.Name;
 				info.Description = client.Description;
+				info.SupportsCommandLine = client.SupportsCommandLine;
 				info.Client = client;
 			}
 			catch
@@ -34,6 +39,12 @@ namespace ServerX
 			{
 				ClientInfo temp;
 				_clients.TryRemove(info.ID, out temp);
+			};
+			client.NotificationReceived += msg =>
+			{
+				var handler = ExtensionNotificationReceived;
+				if(handler != null)
+					handler(info.ID, info.Name, msg);
 			};
 
 			// make sure the extension ID is unique
@@ -69,7 +80,9 @@ namespace ServerX
 
 		public ExtensionInfo[] ListConnectedExtensions()
 		{
-			return _clients.Values.ToArray();
+			return _clients.Values.Select(e => e.Clone()).ToArray();
 		}
+
+		public event ServiceManagerCallback.ExtensionNotificationHandler ExtensionNotificationReceived;
 	}
 }

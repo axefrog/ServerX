@@ -18,6 +18,23 @@ namespace ServerX.Common
 		[DataMember]
 		public string Description { get; set; }
 
+		[DataMember]
+		public bool SupportsCommandLine { get; set; }
+
+		[IgnoreDataMember]
 		internal string AssemblyQualifiedName { get; set; }
+
+		public ExtensionInfo Clone()
+		{
+			return new ExtensionInfo
+			{
+				ID = ID,
+				Name = Name,
+				AssemblyQualifiedName = AssemblyQualifiedName,
+				CommandID = CommandID,
+				Description = Description,
+				SupportsCommandLine = SupportsCommandLine
+			};
+		}
 	}
 }

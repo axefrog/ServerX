@@ -40,7 +40,7 @@ namespace ServerX.Common
 		string ExecuteCommand(string command, string args);
 
 		[OperationContract]
-		CommandInfo ListCommands();
+		ExtensionInfo[] ListCommands();
 
 		[OperationContract]
 		string GetCommandHelp(string command);

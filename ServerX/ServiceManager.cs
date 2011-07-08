@@ -24,6 +24,13 @@ namespace ServerX
 			if(_extensionsBaseDir.GetFiles().Select(f => f.Extension.ToLower()).Any(ext => _extensionFileExtensions.Contains(ext)))
 				throw new Exception("The extensions directory currently contains assemblies and/or executables. Extensions should be located in subdirectories of the Extensions folder; not the Extensions directory itself.");
 
+			_extClientMgr.ExtensionNotificationReceived += (extID, extName, message) =>
+			{
+				var handler = ExtensionNotificationReceived;
+				if(handler != null)
+					handler(extID, extName, message);
+			};
+
 			_extProcMgr = new ExtensionProcessManager(
 				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServerX.Run.exe"),
 				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extensions")
@@ -32,6 +39,8 @@ namespace ServerX
 			StartExtensions();
 			//var commandRunner = new CommandRunner(this);
 		}
+
+		public event ServiceManagerCallback.ExtensionNotificationHandler ExtensionNotificationReceived;
 
 		private void StartExtensions()
 		{
@@ -110,9 +119,9 @@ namespace ServerX
 			throw new NotImplementedException();
 		}
 
-		public CommandInfo ListCommands()
+		public ExtensionInfo[] ListCommands()
 		{
-			throw new NotImplementedException();
+			return _extClientMgr.ListConnectedExtensions().Where(e => e.SupportsCommandLine).ToArray();
 		}
 
 		public string GetCommandHelp(string command)

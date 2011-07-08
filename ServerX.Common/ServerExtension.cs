@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.ServiceModel;
 using System.Threading;
 
@@ -18,7 +19,16 @@ namespace ServerX.Common
 		public abstract bool SupportsCommandLine { get; }
 		public abstract bool SupportsJsonCall { get; }
 
-		public abstract void Run(CancellationTokenSource tokenSource, Logger logger);
+		internal bool RunCalled { get; private set; }
+		public void Run(CancellationTokenSource tokenSource, Logger logger)
+		{
+			Logger = logger;
+			Logger.WriteLine("[" + ID + "] Run() called.");
+			RunCalled = true;
+			Run(tokenSource);
+		}
+
+		public abstract void Run(CancellationTokenSource tokenSource);
 		public abstract bool IsRunning { get; }
 
 		/// <summary>
@@ -29,17 +39,52 @@ namespace ServerX.Common
 			get { return typeof(IServerExtensionHost); }
 		}
 
+		protected Logger Logger { get; private set; }
+
 		ConcurrentDictionary<Guid, OperationContext> _clients = new ConcurrentDictionary<Guid, OperationContext>();
 
 		public void RegisterClient(Guid id)
 		{
+			Logger.WriteLine("[" + ID + "] Incoming client registration: " + id);
 			if(OperationContext.Current != null)
 				_clients.AddOrUpdate(id, OperationContext.Current, (k,v) => OperationContext.Current);
+			else
+				Logger.WriteLine("[" + ID + "] CLIENT REGISTRATION FAILED (OperationContext is null)");
 		}
 
 		public void KeepAlive()
 		{
 			// this method contains no code - the very act of calling it prevents a connected session from timing out
+		}
+
+		public void CallbackEachClient(Action<IServerExtensionCallback> callback)
+		{
+			lock(_clients)
+			{
+				foreach(var kvp in _clients.ToList())
+				{
+					OperationContext ctx;
+					if(kvp.Value.Channel.State == CommunicationState.Faulted)
+					{
+						Logger.WriteLine("[" + ID + "] Can't callback client - state is faulted");
+						_clients.TryRemove(kvp.Key, out ctx);
+					}
+					else if(kvp.Value.Channel.State == CommunicationState.Opened)
+					{
+						try
+						{
+							var cb = kvp.Value.GetCallbackChannel<IServerExtensionCallback>();
+							callback(cb);
+							//Logger.WriteLine("[" + ID + "] Callback sent.");
+						}
+						catch(Exception ex)
+						{
+							Logger.WriteLine("[" + ID + "] Can't callback client - " + ex.Message);
+							_clients.TryRemove(kvp.Key, out ctx);
+						}
+					}
+				}
+			}
 		}
 	}
 }

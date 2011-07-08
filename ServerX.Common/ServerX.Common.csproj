@@ -62,7 +62,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Command.cs" />
-    <Compile Include="CommandInfo.cs" />
     <Compile Include="CommandResponse.cs" />
     <Compile Include="ClientBase.cs" />
     <Compile Include="IServiceHost.cs" />
