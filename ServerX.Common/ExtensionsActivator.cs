@@ -5,12 +5,10 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.ServiceModel;
-using System.ServiceModel.Channels;
 using System.ServiceModel.Description;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
-using Server;
 
 namespace ServerX.Common
 {
@@ -41,7 +39,7 @@ namespace ServerX.Common
 			{
 				var asm = Assembly.Load(Path.GetFileNameWithoutExtension(file.Name));
 				var typeMap = (from t in asm.GetTypes()
-							   where t.GetInterfaces().Any(i => i == typeof(IServerExtension)) && t.IsClass && !t.IsAbstract
+							   where t.GetInterfaces().Any(i => i == typeof(IServerExtension)) && t.IsClass && !t.IsAbstract && t.GetConstructors().Where(i => i.GetParameters().Count() == 0).Any()
 							   select new { Ext = (IServerExtension)Activator.CreateInstance(t) }).ToDictionary(k => k.Ext.ID, v => v.Ext);
 				list.AddRange(
 					typeMap.Values.Select(ext => new ExtensionInfo

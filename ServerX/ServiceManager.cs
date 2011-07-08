@@ -13,7 +13,8 @@ namespace ServerX
 	{
 		private DirectoryInfo _extensionsBaseDir;
 		private readonly string[] _extensionFileExtensions = new[] { "dll", "exe" };
-		private ExtensionProcessManager _extMgr;
+		private ExtensionProcessManager _extProcMgr;
+		private ServerExtensionClientManager _extClientMgr = new ServerExtensionClientManager();
 
 		public ServiceManager()
 		{
@@ -23,7 +24,7 @@ namespace ServerX
 			if(_extensionsBaseDir.GetFiles().Select(f => f.Extension.ToLower()).Any(ext => _extensionFileExtensions.Contains(ext)))
 				throw new Exception("The extensions directory currently contains assemblies and/or executables. Extensions should be located in subdirectories of the Extensions folder; not the Extensions directory itself.");
 
-			_extMgr = new ExtensionProcessManager(
+			_extProcMgr = new ExtensionProcessManager(
 				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServerX.Run.exe"),
 				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extensions")
 			);
@@ -49,7 +50,7 @@ namespace ServerX
 				string[] ids = null;
 				if(arr.Length == 2)
 					ids = arr[1].Split(new [] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(a => a.Trim()).ToArray();
-				_extMgr.Execute(dir, ids ?? new string[0]);
+				_extProcMgr.Execute(dir, ids ?? new string[0]);
 			}
 		}
 
@@ -104,7 +105,7 @@ namespace ServerX
 				return pl.AllExtensions;
 		}
 
-		public string ExecuteCommand(string command)
+		public string ExecuteCommand(string command, string args)
 		{
 			throw new NotImplementedException();
 		}
@@ -161,18 +162,18 @@ namespace ServerX
 
 		public void KeepExtensionProcessAlive(Guid id)
 		{
-			_extMgr.KeepAlive(id);
+			_extProcMgr.KeepAlive(id);
 		}
 
 		public void NotifyExtensionServiceReady(string address)
 		{
-			
+			_extClientMgr.TryConnect(address);
 		}
 
 		public virtual void Dispose()
 		{
-			_extMgr.Dispose();
-			_extMgr = null;
+			_extProcMgr.Dispose();
+			_extProcMgr = null;
 		}
 	}
 }

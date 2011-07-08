@@ -1,206 +1,47 @@
 ﻿using System;
 using System.ServiceModel;
 using System.Timers;
-using ServerX.Common;
 
-namespace Server
+namespace ServerX.Common
 {
-	public sealed class ServiceManagerClient : DuplexClientBase<IServiceManagerHost>, IServiceManagerHost
+	public sealed class ServiceManagerClient : ClientBase<ServiceManagerClient, IServiceManagerHost, ServiceManagerCallback>, IServiceManagerHost
 	{
-		private Guid? _id;
-		public Guid ID
-		{
-			get
-			{
-				if(!_id.HasValue)
-					throw new InvalidOperationException("Call RegisterClient() before reading the ID property");
-				return _id.Value;
-			}
-			private set { _id = value; }
-		}
-
 		public ServiceManagerClient()
-			: this(new ServiceManagerCallback())
 		{
-		}
-
-		public ServiceManagerClient(string endpointConfigurationName)
-			: this(endpointConfigurationName, new ServiceManagerCallback())
-		{
-		}
-
-		private ServiceManagerClient(ServiceManagerCallback callback)
-			: base(callback)
-		{
-			Construct(callback);
-		}
-
-		private ServiceManagerClient(string endpointConfigurationName, ServiceManagerCallback callback)
-			: base(callback, endpointConfigurationName)
-		{
-			Construct(callback);
-		}
-
-		private void Construct(ServiceManagerCallback callback)
-		{
-			//callback.NotificationReceived += OnNotificationReceived;
-			//callback.PluginStatusChanged += OnPluginStatusChanged;
-			InnerDuplexChannel.Closing += OnInnerDuplexChannelClosing;
-			InnerDuplexChannel.Opening += OnInnerDuplexChannelOpening;
-			InnerDuplexChannel.Faulted += OnInnerDuplexChannelFaulted;
-			_keepAliveTimer.Elapsed += OnKeepAliveTimerElapsed;
 		}
 
 		public ServiceManagerClient(string address, int port)
 			: this(address, port, new ServiceManagerCallback())
 		{
 		}
+
 		private ServiceManagerClient(string address, int port, ServiceManagerCallback callback)
 			: base(callback, new NetTcpBinding("Default"), new EndpointAddress("net.tcp://" + address + ":" + port + "/ServiceManagerHost"))
 		{
-			Construct(callback);
 		}
 
-		private Timer _keepAliveTimer = new Timer(5000);
-		private void OnInnerDuplexChannelOpening(object sender, EventArgs e)
+		public ServiceManagerClient(string endpointConfigurationName) : base(endpointConfigurationName)
 		{
-			_keepAliveTimer.Start();
 		}
 
-		void OnInnerDuplexChannelClosing(object sender, EventArgs e)
+		protected override void InitCallback(ServiceManagerCallback callback)
 		{
-			OnDisconnected();
-			_keepAliveTimer.Stop();
-		}
-
-		void OnInnerDuplexChannelFaulted(object sender, EventArgs e)
-		{
-			OnDisconnected();
-			_keepAliveTimer.Stop();
-		}
-
-		void OnDisconnected()
-		{
-			var handler = Disconnected;
-			if(handler != null)
-				handler(this);
-		}
-
-		void OnKeepAliveTimerElapsed(object sender, ElapsedEventArgs e)
-		{
-			KeepAlive();
-		}
-
-		//void OnNotificationReceived(LogMode mode, string plugin, string[] messages)
-		//{
-		//    var handler = MessagesReceived;
-		//    if(handler != null)
-		//        handler(mode, plugin, messages);
-		//}
-		//void OnPluginStatusChanged(string plugin, string status)
-		//{
-		//    var handler = StatusChanged;
-		//    if(handler != null)
-		//        handler(plugin, status);
-		//}
-
-		//public string SendCommand(string command, string[] args)
-		//{
-		//    var str = Channel.SendCommand(command, args);
-		//    if(str == ((char)27).ToString())
-		//        throw new CommandNotFoundException(command);
-		//    return str;
-		//}
-
-		//public PluginCommandInfo[] ListCommands()
-		//{
-		//    return Channel.ListCommands();
-		//}
-
-		//public string GetCommandHelp(string command)
-		//{
-		//    return Channel.GetCommandHelp(command);
-		//}
-
-		///// <summary>
-		///// Informs all plugins that any long-running processes should be finalised and stopped, and that the plugin should enter a state where the service can safely shut down.
-		///// </summary>
-		//public void RequestShutdown()
-		//{
-		//    Channel.RequestShutdown();
-		//}
-
-		//public string GetServiceName()
-		//{
-		//    return Channel.GetServiceName();
-		//}
-
-		//public event PluginServiceNotify MessagesReceived;
-		//public event PluginServiceNotifyStatus StatusChanged;
-		public event ServiceManagerClientDisconnectedHandler Disconnected;
-		void IServiceManagerHost.RegisterClient(Guid id)
-		{
-			ID = id;
-			Channel.RegisterClient(id);
-		}
-
-		public void RegisterClient()
-		{
-			((IServiceManagerHost)this).RegisterClient(Guid.NewGuid());
-		}
-
-		public void KeepAlive()
-		{
-			try
+			callback.NotificationReceived += msg =>
 			{
-				if(State == CommunicationState.Opened)
-					try
-					{
-						Channel.KeepAlive();
-					}
-					catch(ObjectDisposedException)
-					{
-					}
-			}
-			catch(TimeoutException)
+				var handler = NotificationReceived;
+				if(handler != null)
+					handler(msg);
+			};
+			callback.ExtensionNotificationReceived += (extID, extName, msg) =>
 			{
-				TimedOut = true;
-				try
-				{
-					Close();
-				}
-				catch
-				{
-				}
-			}
+				var handler = ExtensionNotificationReceived;
+				if(handler != null)
+					handler(extID, extName, msg);
+			};
 		}
 
-		public bool TimedOut { get; set; }
-
-		internal class ServiceManagerCallback : IServiceManagerCallback
-		{
-			public void SendMessage(string message)
-			{
-
-			}
-
-			//public void Notify(LogMode mode, string plugin, string[] messages)
-			//{
-			//    var handler = NotificationReceived;
-			//    if(handler != null)
-			//        handler(mode, plugin, messages);
-			//}
-
-			//public void NotifyStatus(string plugin, string status)
-			//{
-			//    var handler = PluginStatusChanged;
-			//    if(handler != null)
-			//        handler(plugin, status);
-			//}
-
-			//public event PluginServiceNotify NotificationReceived;
-			//public event PluginServiceNotifyStatus PluginStatusChanged;
-		}
+		public event ServerExtensionCallback.ExtensionNotificationHandler ExtensionNotificationReceived;
+		public event ServiceCallbackBase.NotificationHandler NotificationReceived;
 
 		public DateTime GetServerTime()
 		{
@@ -252,9 +93,9 @@ namespace Server
 			return Channel.ListExtensionsInDirectory(name);
 		}
 
-		public string ExecuteCommand(string command)
+		public string ExecuteCommand(string command, string args)
 		{
-			return Channel.ExecuteCommand(command);
+			return Channel.ExecuteCommand(command, args);
 		}
 
 		public CommandInfo ListCommands()
@@ -318,5 +159,26 @@ namespace Server
 		}
 	}
 
-	public delegate void ServiceManagerClientDisconnectedHandler(ServiceManagerClient client);
+	public class ServiceManagerCallback : IServiceManagerCallback
+	{
+		public void ServerExtensionNotify(string extID, string extName, string message)
+		{
+			var handler = ExtensionNotificationReceived;
+			if(handler != null)
+				handler(extID, extName, message);
+		}
+
+		public delegate void ExtensionNotificationHandler(string extID, string extName, string message);
+		public event ExtensionNotificationHandler ExtensionNotificationReceived;
+
+		public void ServiceManagerNotify(string message)
+		{
+			var handler = NotificationReceived;
+			if(handler != null)
+				handler(message);
+		}
+
+		public delegate void NotificationHandler(string message);
+		public event NotificationHandler NotificationReceived;
+	}
 }

@@ -46,9 +46,23 @@ namespace ServerX.ServiceConsole
 			_events.Application = _app;
 			foreach(var plugin in consolePlugins)
 				plugin.Init(_app);
+			_app.NotificationReceived += OnNotificationReceived;
+			_app.ExtensionNotificationReceived += OnExtensionNotificationReceived;
 			//_app.MessagesReceived += OnMessagesReceived;
 			//_app.StatusChanged += OnStatusChanged;
 			//_app.DisplayServerNotificationsChanged += display =>{ if(display) FlushMessageBuffer(); };
+		}
+
+		void OnNotificationReceived(string message)
+		{
+			if(_app.DisplayServerNotifications)
+				ColorConsole.WriteLinesLabelled("Service Manager", 15, ConsoleColor.Cyan, message);
+		}
+
+		void OnExtensionNotificationReceived(string extID, string extName, string message)
+		{
+			if(_app.DisplayServerNotifications)
+				ColorConsole.WriteLinesLabelled(extName, extName.Length, ConsoleColor.Blue, message);
 		}
 
 		//void OnStatusChanged(string plugin, string status)

@@ -37,7 +37,7 @@ namespace ServerX.Common
 		ExtensionInfo[] ListExtensionsInDirectory(string name);
 
 		[OperationContract]
-		string ExecuteCommand(string command);
+		string ExecuteCommand(string command, string args);
 
 		[OperationContract]
 		CommandInfo ListCommands();
@@ -74,5 +74,19 @@ namespace ServerX.Common
 
 		[OperationContract]
 		void NotifyExtensionServiceReady(string address);
+	}
+
+	[ServiceContract(Name = "ServiceManager", Namespace = "http://ServerX/ServiceManager", CallbackContract = typeof(IServiceManagerCallback), SessionMode = SessionMode.Allowed)]
+	public interface IServiceManagerHost : IServiceManager, IServiceHost
+	{
+	}
+
+	public interface IServiceManagerCallback
+	{
+		[OperationContract(IsOneWay = true)]
+		void ServiceManagerNotify(string message);
+
+		[OperationContract(IsOneWay = true)]
+		void ServerExtensionNotify(string extID, string extName, string message);
 	}
 }

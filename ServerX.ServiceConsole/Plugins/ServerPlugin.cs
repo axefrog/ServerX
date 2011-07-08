@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Web.Script.Serialization;
 using Mono.Options;
 using ServerX.Service;
@@ -28,8 +28,13 @@ namespace ServerX.ServiceConsole.Plugins
 		{
 			public int Port = DefaultPort;
 			public ServiceAction Action = ServiceAction.Status;
-			public bool Local = false;
-			public bool AutoConnect = false;
+			public bool Local;
+			public bool AutoConnect;
+
+			public ServiceCommandParams()
+			{
+				AutoConnect = false;
+			}
 		}
 
 		private enum ServiceAction
@@ -183,6 +188,50 @@ namespace ServerX.ServiceConsole.Plugins
 					}
 
 					return app.Connect(prms.Address, prms.Port);
+				}
+			});
+
+			application.RegisterCommand(new ConsoleCommand
+			{
+				Title = "List Server Commands",
+				CommandAliases = new [] { "xlist", "xl" },
+				Description = "Lists all commands and their descriptions",
+				HelpDescription = "Displays a list of available commands. This command has no arguments.",
+				Handler = (app, command, args) =>
+				{
+					var cmdlen = app.CommandsByTitle.Values.Max(c => c.CommandAliases.First().Length);
+
+					Console.WriteLine();
+					ColorConsole.WriteLine("Console Commands:", ConsoleColor.White);
+					Console.WriteLine();
+					foreach(var cmd in app.CommandsByTitle.Values.OrderBy(p => p.CommandAliases.First()))
+						ColorConsole.WriteLinesLabelled(cmd.CommandAliases.First(), cmdlen, ConsoleColor.Yellow, cmd.Description);
+
+					Console.WriteLine();
+					ColorConsole.WriteLine("%?Type %@help [command]%@ for help on specific commands%?");
+
+					return null;
+				}
+			});
+
+			application.RegisterCommand(new ConsoleCommand
+			{
+				Title = "Watch for Notifications",
+				CommandAliases = new [] { "watch", "w" },
+				Description = "Displays notifications as they are received",
+				HelpDescription = "Puts the console into an idle state where it will display any server notifications received.",
+				Handler = (app, command, args) =>
+				{
+					Console.CursorVisible = false;
+					ColorConsole.WriteLine("%~Watch mode is active.%~ %?Press any key to exit watch mode.%?");
+					app.DisplayServerNotifications = true;
+					while(!Console.KeyAvailable)
+						Thread.Sleep(10);
+					app.DisplayServerNotifications = false;
+					Console.ReadKey(true);
+					ColorConsole.WriteLine("Watch mode deactivated.", ConsoleColor.Green);
+					Console.CursorVisible = true;
+					return null;
 				}
 			});
 		}

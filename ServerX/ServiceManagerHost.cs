@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.ServiceModel;
-using System.Text;
+using System.Timers;
 using ServerX.Common;
 
 namespace ServerX
@@ -11,20 +12,26 @@ namespace ServerX
 	public class ServiceManagerHost : IServiceManagerHost
 	{
 		ServiceManager _service;
-		Dictionary<Guid, OperationContext> _clients = new Dictionary<Guid, OperationContext>();
-		Logger _exlogger = new Logger("servicemanager-exceptions");
 
+		Timer _timer;
 		public ServiceManagerHost()
 		{
+			_exlogger = new Logger("servicemanager-exceptions");
 			_service = new ServiceManager();
+			_timer = new Timer(1000);
+			_timer.Elapsed += (s,e) => CallbackEachClient(cb => cb.ServiceManagerNotify("Test."));
+			_timer.Start();
 		}
 
-		void HandleException(Exception ex)
+		Dictionary<Guid, OperationContext> _clients = new Dictionary<Guid, OperationContext>();
+		Logger _exlogger;
+
+		protected void HandleException(Exception ex)
 		{
-			_exlogger.WriteLines("ServiceManager Exception:", ex, Environment.NewLine);
+			_exlogger.WriteLines(GetType().Name + " Exception:", ex, Environment.NewLine);
 		}
 
-		void CallbackEachClient(Action<IServiceManagerCallback> callback)
+		public void CallbackEachClient(Action<IServiceManagerCallback> callback)
 		{
 			lock(_clients)
 			{
@@ -69,7 +76,6 @@ namespace ServerX
 
 		public void KeepAlive()
 		{
-
 		}
 
 		public DateTime GetServerTime()
@@ -122,9 +128,9 @@ namespace ServerX
 			return _service.ListExtensionsInDirectory(name);
 		}
 
-		public string ExecuteCommand(string command)
+		public string ExecuteCommand(string command, string args)
 		{
-			return _service.ExecuteCommand(command);
+			return _service.ExecuteCommand(command, args);
 		}
 
 		public CommandInfo ListCommands()

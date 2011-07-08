@@ -3,18 +3,14 @@ using System.Runtime.Serialization;
 
 namespace ServerX.Common
 {
-	public interface IExtensionInfo
-	{
-		[DataMember] string ID { get; set; }
-		[DataMember] string Name { get; set; }
-		[DataMember] string Description { get; set; }
-	}
-
 	[DataContract, Serializable]
-	public class ExtensionInfo : IExtensionInfo
+	public class ExtensionInfo
 	{
 		[DataMember]
 		public string ID { get; set; }
+
+		[DataMember]
+		public string CommandID { get; set; }
 
 		[DataMember]
 		public string Name { get; set; }

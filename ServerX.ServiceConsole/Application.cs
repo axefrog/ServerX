@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.ServiceModel;
 using System.Text.RegularExpressions;
-using Server;
 using ServerX.Common;
 using ServerX.Service;
 
@@ -15,8 +15,8 @@ namespace ServerX.ServiceConsole
 		private readonly ConsoleEvents _consoleEvents;
 		public bool ExitRequested { get; set; }
 		private ServiceHost _serviceHost;
-		private bool _displayServerNotifications;
 		private PersistenceManager<Settings> _settings = new PersistenceManager<Settings>("console");
+		private bool _displayServerNotifications;
 
 		readonly Regex _rxSplitCommand = new Regex(@"((""((?<match>.*?)(?<!\\)"")|(?<match>[\w\S]+))(\s)*)", RegexOptions.ExplicitCapture);
 		readonly Regex _fastRun = new Regex(@"^\![A-Za-z0-9\-_]+$");
@@ -76,6 +76,19 @@ namespace ServerX.ServiceConsole
 		public event ApplicationEventHandler ConsoleReady;
 		public event ApplicationEventHandler ConsoleClosing;
 
+		public event Action<bool> DisplayServerNotificationsChanged;
+		public bool DisplayServerNotifications
+		{
+			get { return _displayServerNotifications; }
+			set
+			{
+				_displayServerNotifications = value;
+				var handler = DisplayServerNotificationsChanged;
+				if(handler != null)
+					DisplayServerNotificationsChanged(value);
+			}
+		}
+
 		private ServiceManagerClient _client;
 		public string Connect(string address, int port)
 		{
@@ -92,8 +105,25 @@ namespace ServerX.ServiceConsole
 				return "%!Unable to connect to " + address + ":" + port;
 			}
 			_client.Disconnected += OnServiceDisconnected;
+			_client.NotificationReceived += OnNotificationReceived;
+			_client.ExtensionNotificationReceived += OnExtensionNotificationReceived;
+
 			var dt = _client.GetServerTime();
 			return "%~Connected. Server time is " + dt + ".";
+		}
+
+		void OnNotificationReceived(string message)
+		{
+			var handler = NotificationReceived;
+			if(handler != null)
+				handler(message);
+		}
+
+		void OnExtensionNotificationReceived(string extID, string extName, string message)
+		{
+			var handler = ExtensionNotificationReceived;
+			if(handler != null)
+				handler(extID, extName, message);
 		}
 
 		void OnServiceDisconnected(ServiceManagerClient psc)
@@ -133,19 +163,6 @@ namespace ServerX.ServiceConsole
 				return true;
 			}
 			return false;
-		}
-
-		public event Action<bool> DisplayServerNotificationsChanged;
-		public bool DisplayServerNotifications
-		{
-			get { return _displayServerNotifications; }
-			set
-			{
-				_displayServerNotifications = value;
-				var handler = DisplayServerNotificationsChanged;
-				if(handler != null)
-					DisplayServerNotificationsChanged(value);
-			}
 		}
 
 		public void Execute(string commandString)
@@ -194,6 +211,9 @@ namespace ServerX.ServiceConsole
 		public void Dispose()
 		{
 		}
+
+		public event ServerExtensionCallback.ExtensionNotificationHandler ExtensionNotificationReceived;
+		public event ServiceCallbackBase.NotificationHandler NotificationReceived;
 	}
 
 	public delegate void ApplicationEventHandler(Application app);

@@ -1,11 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.ServiceModel;
-using System.Text;
-using System.Threading;
 
 namespace ServerX.Common
 {
@@ -13,6 +7,7 @@ namespace ServerX.Common
 	public interface IServerExtension
 	{
 		string ID { [OperationContract] get; }
+		string CommandID { [OperationContract] get; }
 		string Name { [OperationContract] get; }
 		string Description { [OperationContract] get; }
 
@@ -20,16 +15,20 @@ namespace ServerX.Common
 		string JsonCall(string name, string data);
 		
 		[OperationContract]
-		string Command(string name, string[] args);
+		string Command(string args);
+
+		bool SupportsCommandLine { [OperationContract] get; }
+		bool SupportsJsonCall { [OperationContract] get; }
 	}
 
-	[ServiceContract]
-	public interface IServerExtensionHost : IServerExtension
+	[ServiceContract(CallbackContract = typeof(IServerExtensionCallback), SessionMode = SessionMode.Allowed)]
+	public interface IServerExtensionHost : IServiceHost, IServerExtension
 	{
-		[OperationContract]
-		void RegisterClient(Guid id);
+	}
 
-		[OperationContract]
-		void KeepAlive();
+	public interface IServerExtensionCallback
+	{
+		[OperationContract(IsOneWay = true)]
+		void Notify(string message);
 	}
 }
