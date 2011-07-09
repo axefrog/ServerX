@@ -40,7 +40,6 @@ namespace ServerX
 			_cmdRunner = new CommandRunner(this, _extClientMgr);
 
 			StartExtensions();
-			//var commandRunner = new CommandRunner(this);
 		}
 
 		public event ServiceManagerCallback.ExtensionNotificationHandler ExtensionNotificationReceived;
@@ -86,14 +85,9 @@ namespace ServerX
 			throw new NotImplementedException();
 		}
 
-		public Result RestartExtension(string name)
+		public Result RestartExtensions(string subdirName, params string[] extensionIDs)
 		{
-			throw new NotImplementedException();
-		}
-
-		public Result RestartExtensionsInDirectory(string name)
-		{
-			throw new NotImplementedException();
+			return _extProcMgr.RestartExtensions(subdirName, extensionIDs);
 		}
 
 		public string[] ListExtensionDirectories()

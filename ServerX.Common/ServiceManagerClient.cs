@@ -63,14 +63,9 @@ namespace ServerX.Common
 			return Channel.SetExtensionEnabled(name, enabled);
 		}
 
-		public Result RestartExtension(string name)
+		public Result RestartExtensions(string subdirName, params string[] extensionIDs)
 		{
-			return Channel.RestartExtension(name);
-		}
-
-		public Result RestartExtensionsInDirectory(string name)
-		{
-			return Channel.RestartExtensionsInDirectory(name);
+			return Channel.RestartExtensions(subdirName, extensionIDs);
 		}
 
 		public string[] ListExtensionDirectories()

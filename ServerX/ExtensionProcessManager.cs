@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ServerX.Common;
@@ -69,10 +70,15 @@ namespace ServerX
 			public string[] ExtensionIDs { get; set; }
 			public string DirectoryName { get; set; }
 			public DateTime Timeout { get; set; }
+			public bool RequestRestart { get; set; }
 		}
 
 		private ProcessInfo StartProcess(string dirName, params string[] extensionIDs)
 		{
+			if(extensionIDs == null || extensionIDs.Length == 0)
+				using(var loader = new SafeExtensionLoader(_extensionsBasePath, dirName))
+					extensionIDs = loader.AllExtensions.Select(e => e.ID).ToArray();
+
 			var info = new ProcessInfo
 			{
 				ID = Guid.NewGuid(),
@@ -103,32 +109,53 @@ namespace ServerX
 			DateTime nextCheck = DateTime.Now.Add(interval);
 			while(!token.IsCancellationRequested)
 			{
-				if(nextCheck > DateTime.Now)
+				try
 				{
-					Thread.Sleep(100);
-					continue;
-				}
-				foreach(var key in processes.Keys.ToArray())
-				{
-					ProcessInfo p;
-					if(processes.TryGetValue(key, out p))
+					if(nextCheck > DateTime.Now)
 					{
-						lock(p)
-							if(p.Process.HasExited)
-							{
-								var exitCode = p.Process.ExitCode;
-								p.Process.Start();
-								logger.WriteLine("Process " + p.ID + " (" + p.DirectoryName + ") exited with code " + exitCode + " and so has been restarted");
-							}
-							else if(p.Timeout < DateTime.Now)
-							{
-								logger.WriteLine("Process " + p.ID + " (" + p.DirectoryName + ") did not call back inside the timeout period and will be restarted... ");
-								p.Process.Kill();
-								p.Process.WaitForExit();
-								p.Process.Start();
-								logger.WriteLine("Process " + p.ID + " (" + p.DirectoryName + ") restarted successfully");
-							}
+						Thread.Sleep(100);
+						continue;
 					}
+					foreach(var key in processes.Keys.ToArray())
+					{
+						ProcessInfo p;
+						if(processes.TryGetValue(key, out p))
+						{
+							lock(p)
+								if(p.Process.HasExited)
+								{
+									var exitCode = p.Process.ExitCode;
+									p.Process.Start();
+									logger.WriteLine("Process " + p.ID + " (" + p.DirectoryName + ") exited with code " + exitCode + " and so has been restarted");
+								}
+								else if(p.Timeout < DateTime.Now)
+								{
+									logger.WriteLine("Process " + p.ID + " (" + p.DirectoryName + ") did not call back inside the timeout period and will be restarted... ");
+									p.Process.Kill();
+									p.Process.WaitForExit();
+									p.Process.Start();
+									logger.WriteLine("Process " + p.ID + " (" + p.DirectoryName + ") restarted successfully");
+								}
+								else if(p.RequestRestart)
+								{
+									p.RequestRestart = false;
+									logger.WriteLine("Restart requested via API for process " + p.ID + " (" + p.DirectoryName + ")");
+									p.Process.Kill();
+									p.Process.WaitForExit();
+									p.Process.Start();
+									logger.WriteLine("Process " + p.ID + " (" + p.DirectoryName + ") restarted successfully");
+								}
+						}
+					}
+				}
+				catch(TaskCanceledException)
+				{
+					throw;
+				}
+				catch(Exception ex)
+				{
+					logger.WriteLines("EXCEPTION: MonitorProcesses() (crash prevented - waiting 5 seconds before resuming)", ex);
+					Thread.Sleep(5000);
 				}
 				nextCheck = DateTime.Now.Add(interval);
 			}
@@ -136,17 +163,30 @@ namespace ServerX
 
 		public void Execute(string dirName, params string[] extensionIDs)
 		{
-			var pi = StartProcess(dirName, extensionIDs);
-			_processes.AddOrUpdate(pi.ID, pi, (k,p) =>
+			ProcessInfo info;
+			try
 			{
-				lock(p)
-					if(!p.Process.HasExited)
-					{
-						p.Process.Kill();
-						p.Process.Dispose();
-					}
-				return pi;
-			});
+				info = StartProcess(dirName, extensionIDs);
+				_processes.AddOrUpdate(info.ID, info, (k,p) =>
+				{
+					lock(p)
+						if(!p.Process.HasExited)
+						{
+							p.Process.Kill();
+							p.Process.Dispose();
+						}
+					return info;
+				});
+			}
+			catch(Exception ex)
+			{
+				_logger.WriteLines(
+					"EXCEPTION: Execute()",
+					"	=> dirName: " + dirName,
+					"	=> extensionIDs: " + extensionIDs.Concat(", "),
+					ex
+				);
+			}
 		}
 
 		internal void KeepAlive(Guid id)
@@ -184,6 +224,26 @@ namespace ServerX
 						
 						}
 			_processes.Clear();
+		}
+
+		public Result RestartExtensions(string subdirName, string[] extensionIDs)
+		{
+			int count = 0;
+			foreach(var process in (from p in _processes.Values
+									where (string.IsNullOrWhiteSpace(subdirName) || p.DirectoryName.ToLower() == subdirName.ToLower())
+										&& (extensionIDs == null || extensionIDs.Length == 0 || (p.ExtensionIDs != null && (from e in p.ExtensionIDs
+																															join x in extensionIDs on e equals x
+																															select e).Count() > 0))
+									select p))
+			{
+				process.RequestRestart = true;
+				count++;
+			}
+			return new Result
+			{
+				Success = count > 0,
+				Message = count + " matching extension process(es) were flagged for restart."
+			};
 		}
 	}
 }

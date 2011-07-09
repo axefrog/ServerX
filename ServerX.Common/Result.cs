@@ -8,7 +8,17 @@ namespace ServerX.Common
 	public class Result
 	{
 		public bool Success { get; set; }
-		public string ErrorMessage { get; set; }
+		public string Message { get; set; }
+
+		public Result()
+		{
+		}
+
+		public Result(bool success = true, string message = null)
+		{
+			Success = true;
+			Message = message;
+		}
 
 		public static bool operator ==(Result a, bool b)
 		{

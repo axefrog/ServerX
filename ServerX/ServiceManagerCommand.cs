@@ -11,7 +11,6 @@ namespace ServerX
 	{
 		public Command Details { get; set; }
 		public CommandExecuteHandler Handler { get; set; }
-		public OptionSet Options { get; set; }
 
 		public delegate string CommandExecuteHandler(ServiceManager svc, string[] args);
 	}

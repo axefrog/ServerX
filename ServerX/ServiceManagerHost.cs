@@ -100,14 +100,9 @@ namespace ServerX
 			return _service.SetExtensionEnabled(name, enabled);
 		}
 
-		public Result RestartExtension(string name)
+		public Result RestartExtensions(string subdirName, params string[] extensionIDs)
 		{
-			return _service.RestartExtension(name);
-		}
-
-		public Result RestartExtensionsInDirectory(string name)
-		{
-			return _service.RestartExtensionsInDirectory(name);
+			return _service.RestartExtensions(subdirName, extensionIDs);
 		}
 
 		public string[] ListExtensionDirectories()

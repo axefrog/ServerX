@@ -19,10 +19,7 @@ namespace ServerX.Common
 		Result SetExtensionEnabled(string name, bool enabled);
 
 		[OperationContract]
-		Result RestartExtension(string name);
-
-		[OperationContract]
-		Result RestartExtensionsInDirectory(string name);
+		Result RestartExtensions(string subdirName, params string[] extensionIDs);
 
 		[OperationContract]
 		string[] ListExtensionDirectories();

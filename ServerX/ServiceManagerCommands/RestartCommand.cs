@@ -9,12 +9,28 @@ namespace ServerX.ServiceManagerCommands
 {
 	static class RestartCommand
 	{
+		private static OptionSet GetOptions(Options options = null, ServiceManager svc = null)
+		{
+			return new OptionSet
+			{
+				{ "subdir|s=", "Restricts the extensions to be restarted to a specific extension subdirectory", v => options.Subdirectory = v },
+				{ "<>", v => options.ExtensionIDs.Add(v) },
+			};
+		}
+
+		private class Options
+		{
+			public string Subdirectory { get; set; }
+			public List<string> ExtensionIDs { get; private set; }
+
+			public Options()
+			{
+				ExtensionIDs = new List<string>();
+			}
+		}
+
 		public static ServiceManagerCommand Get()
 		{
-			var options = new OptionSet
-			{
-			};
-
 			return new ServiceManagerCommand
 			{
 				Details = new Command
@@ -24,13 +40,26 @@ namespace ServerX.ServiceManagerCommands
 					CommandAliases = new[] { "restart" },
 					HelpUsage = "restart [args] {extensionID} {extensionID} ...",
 					HelpDescription = null,
-					HelpOptions = options.WriteOptionDescriptions(),
+					HelpOptions = GetOptions().WriteOptionDescriptions(),
 					HelpRemarks = null
 				},
-				Options = options,
 				Handler = (svc, args) =>
 				{
-					return null;
+					var options = new Options();
+					var p = GetOptions(options, svc);
+					try
+					{
+						p.Parse(args);
+					}
+					catch(OptionException ex)
+					{
+						return "%!" + ex.Message;
+					}
+
+					var result = svc.RestartExtensions(options.Subdirectory, options.ExtensionIDs.ToArray());
+					if(!result.Success)
+						return "%!" + result.Message;
+					return "%~" + (result.Message ?? "Restart request issued.");
 				}
 			};
 		}
