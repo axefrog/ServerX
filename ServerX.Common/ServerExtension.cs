@@ -57,7 +57,12 @@ namespace ServerX.Common
 			// this method contains no code - the very act of calling it prevents a connected session from timing out
 		}
 
-		public void CallbackEachClient(Action<IServerExtensionCallback> callback)
+		protected void Notify(string message)
+		{
+			CallbackEachClient(cb => cb.Notify(message));
+		}
+
+		private void CallbackEachClient(Action<IServerExtensionCallback> callback)
 		{
 			lock(_clients)
 			{
