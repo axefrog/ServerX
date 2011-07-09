@@ -4,6 +4,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using Mono.Options;
+using ServerX.Common;
 
 namespace ServerX.ServiceConsole.Plugins
 {
@@ -87,13 +88,38 @@ namespace ServerX.ServiceConsole.Plugins
 				HelpDescription = "Displays a list of available commands. This command has no arguments.",
 				Handler = (app, command, args) =>
 				{
-					var cmdlen = app.CommandsByTitle.Values.Max(c => c.CommandAliases.First().Length);
+					var cmds = app.CommandsByTitle.Values;
+					var smcmds = app.Client != null ? app.Client.ListServiceManagerCommands() : new Command[0];
+					var extcmds = app.Client != null ? app.Client.ListExtensionCommands() : new ExtensionInfo[0];
+
+					var cmdlen = Math.Max(Math.Max(
+						cmds.Max(c => c.CommandAliases.First().Length),
+						smcmds.Length == 0 ? 0 : smcmds.Max(c => c.CommandAliases.First().Length)),
+						extcmds.Length == 0 ? 0 : extcmds.Max(c => c.CommandID.Length));
 
 					Console.WriteLine();
 					ColorConsole.WriteLine("Console Commands:", ConsoleColor.White);
 					Console.WriteLine();
-					foreach(var cmd in app.CommandsByTitle.Values.OrderBy(p => p.CommandAliases.First()))
+					foreach(var cmd in cmds.OrderBy(p => p.CommandAliases.First()))
 						ColorConsole.WriteLinesLabelled(cmd.CommandAliases.First(), cmdlen, ConsoleColor.Yellow, cmd.Description);
+
+					if(app.Client != null)
+					{
+						Console.WriteLine();
+						ColorConsole.WriteLine("Service Manager Commands:", ConsoleColor.White);
+						Console.WriteLine();
+						foreach(var cmd in smcmds.OrderBy(p => p.CommandAliases.First()))
+							ColorConsole.WriteLinesLabelled(cmd.CommandAliases.First(), cmdlen, ConsoleColor.Yellow, cmd.Description);
+
+						if(extcmds.Length > 0)
+						{
+							Console.WriteLine();
+							ColorConsole.WriteLine("Server Extension Commands:", ConsoleColor.White);
+							Console.WriteLine();
+							foreach(var cmd in extcmds.OrderBy(p => p.CommandID))
+								ColorConsole.WriteLinesLabelled(cmd.CommandID, cmdlen, ConsoleColor.Yellow, cmd.Description);
+						}
+					}
 
 					Console.WriteLine();
 					ColorConsole.WriteLine("%?Type %@help [command]%@ for help on specific commands%?");

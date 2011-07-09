@@ -31,7 +31,7 @@ namespace ServerX.Common
 		[DataMember]
 		public string HelpOptions { get; set; }
 		/// <summary>
-		/// The description that comes immediately after the command title
+		/// The description that comes immediately after the command title. If null, <see cref="Description"/> will be used.
 		/// </summary>
 		[DataMember]
 		public string HelpDescription { get; set; }

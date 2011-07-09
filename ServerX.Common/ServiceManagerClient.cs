@@ -93,14 +93,19 @@ namespace ServerX.Common
 			return Channel.ListExtensionsInDirectory(name);
 		}
 
-		public string ExecuteCommand(string command, string args)
+		public string ExecuteCommand(string command, string[] args)
 		{
 			return Channel.ExecuteCommand(command, args);
 		}
 
-		public ExtensionInfo[] ListCommands()
+		public ExtensionInfo[] ListExtensionCommands()
 		{
-			return Channel.ListCommands();
+			return Channel.ListExtensionCommands();
+		}
+
+		public Command[] ListServiceManagerCommands()
+		{
+			return Channel.ListServiceManagerCommands();
 		}
 
 		public string GetCommandHelp(string command)

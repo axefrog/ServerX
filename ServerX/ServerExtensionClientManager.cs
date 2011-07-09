@@ -70,12 +70,17 @@ namespace ServerX
 			return _clients.TryAdd(info.CommandID, info);
 		}
 
-		public string ExecuteCommand(string extid, string args)
+		public string ExecuteCommand(string cmdID, string[] args)
 		{
 			ClientInfo info;
-			if(_clients.TryGetValue((extid ?? "").ToLower(), out info))
+			if(_clients.TryGetValue((cmdID ?? "").ToLower(), out info))
 				return info.Client.Command(args);
-			return "%!command " + extid + " is no longer available.";
+			return "%!command %@" + cmdID + "%@ is no longer available.";
+		}
+
+		public bool IsCommandAvailable(string cmd)
+		{
+			return _clients.ContainsKey(cmd);
 		}
 
 		public ExtensionInfo[] ListConnectedExtensions()

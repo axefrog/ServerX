@@ -37,7 +37,7 @@ namespace ServerX.Common
 			return Channel.JsonCall(name, data);
 		}
 
-		public string Command(string args)
+		public string Command(string[] args)
 		{
 			return Channel.Command(args);
 		}

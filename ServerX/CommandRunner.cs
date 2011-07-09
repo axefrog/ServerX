@@ -3,52 +3,47 @@ using System.Collections.Generic;
 using System.Linq;
 using Mono.Options;
 using ServerX.Common;
+using ServerX.ServiceManagerCommands;
 
 namespace ServerX
 {
-	public class CommandRunner
+	internal class CommandRunner
 	{
 		private readonly ServiceManager _svc;
-		private readonly Dictionary<string, ServerCommand> _commandsByAlias = new Dictionary<string, ServerCommand>();
-		private readonly Dictionary<string, ServerCommand> _commandsByTitle = new Dictionary<string, ServerCommand>();
+		private readonly ServerExtensionClientManager _extmgr;
+		private readonly Dictionary<string, ServiceManagerCommand> _commandsByAlias = new Dictionary<string, ServiceManagerCommand>();
+		private readonly List<ServiceManagerCommand> _commands = new List<ServiceManagerCommand>();
 
-		public CommandRunner(ServiceManager svc)
+		public CommandRunner(ServiceManager svc, ServerExtensionClientManager extmgr)
 		{
 			_svc = svc;
+			_extmgr = extmgr;
+			Add(RestartCommand.Get());
 		}
 
-		OptionSet GetCommandOptions(string cmd)
+		void Add(ServiceManagerCommand cmd)
 		{
-			switch(cmd)
-			{
-				case "":
-
-				default:
-					return null;
-			}
+			_commands.Add(cmd);
+			foreach(var alias in cmd.Details.CommandAliases)
+				_commandsByAlias.Add(alias, cmd);
 		}
 
-		public bool Execute(string command, out string response)
+		public string Execute(string cmd, string[] args)
 		{
-			response = null;
-
-			if(string.IsNullOrWhiteSpace(command))
-				return true;
-
-			var arr = command.Split(new[] { ' ', '\t', '\r', '\n', '\f' }, StringSplitOptions.RemoveEmptyEntries);
-			var args = arr.Length > 1 ? arr.Skip(1).ToArray() : new string[0];
-			var cmd = args[0].ToLower();
-
-			switch(cmd)
+			ServiceManagerCommand smc;
+			if(!_commandsByAlias.TryGetValue(cmd, out smc))
 			{
-				case "cplugins":
-				case "script":
-				//case "listplugindirs":
-					break;
+				if(_extmgr.IsCommandAvailable(cmd))
+					return _extmgr.ExecuteCommand(cmd, args);
+				return "%!Unrecognized command: " + cmd;
 			}
-			return false;
+
+			return smc.Handler(_svc, args);
 		}
 
-
+		public Command[] ListCommands()
+		{
+			return _commands.Select(c => c.Details).ToArray();
+		}
 	}
 }

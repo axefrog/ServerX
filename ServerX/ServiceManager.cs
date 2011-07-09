@@ -15,6 +15,7 @@ namespace ServerX
 		private readonly string[] _extensionFileExtensions = new[] { "dll", "exe" };
 		private ExtensionProcessManager _extProcMgr;
 		private ServerExtensionClientManager _extClientMgr = new ServerExtensionClientManager();
+		private CommandRunner _cmdRunner;
 
 		public ServiceManager()
 		{
@@ -35,6 +36,8 @@ namespace ServerX
 				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServerX.Run.exe"),
 				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extensions")
 			);
+
+			_cmdRunner = new CommandRunner(this, _extClientMgr);
 
 			StartExtensions();
 			//var commandRunner = new CommandRunner(this);
@@ -114,14 +117,19 @@ namespace ServerX
 				return pl.AllExtensions;
 		}
 
-		public string ExecuteCommand(string command, string args)
+		public string ExecuteCommand(string command, string[] args)
 		{
-			throw new NotImplementedException();
+			return _cmdRunner.Execute(command, args);
 		}
 
-		public ExtensionInfo[] ListCommands()
+		public ExtensionInfo[] ListExtensionCommands()
 		{
 			return _extClientMgr.ListConnectedExtensions().Where(e => e.SupportsCommandLine).ToArray();
+		}
+
+		public Command[] ListServiceManagerCommands()
+		{
+			return _cmdRunner.ListCommands();
 		}
 
 		public string GetCommandHelp(string command)

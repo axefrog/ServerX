@@ -14,7 +14,7 @@ namespace ServerX.Common
 		public abstract string Name { get; }
 		public abstract string Description { get; }
 		public abstract string JsonCall(string name, string data);
-		public abstract string Command(string args);
+		public abstract string Command(string[] args);
 
 		public abstract bool SupportsCommandLine { get; }
 		public abstract bool SupportsJsonCall { get; }

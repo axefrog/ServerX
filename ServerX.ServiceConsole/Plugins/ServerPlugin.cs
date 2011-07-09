@@ -193,37 +193,6 @@ namespace ServerX.ServiceConsole.Plugins
 
 			application.RegisterCommand(new ConsoleCommand
 			{
-				Title = "List Server Commands",
-				CommandAliases = new [] { "xlist", "xl" },
-				Description = "Lists all commands and their descriptions",
-				HelpDescription = "Displays a list of available commands. This command has no arguments.",
-				Handler = (app, command, args) =>
-				{
-					if(app.Client == null)
-						return "%!Cannot list server commands while disconnected.";
-
-					var list = app.Client.ListCommands();
-					if(list.Length == 0)
-						ColorConsole.WriteLine("%!There are no available server commands. Extensions may still be initialising.");
-					else
-					{
-						var cmdlen = list.Max(c => c.CommandID.Length);
-						Console.WriteLine();
-						ColorConsole.WriteLine("Server Commands:", ConsoleColor.White);
-						Console.WriteLine();
-						foreach(var cmd in list)
-							ColorConsole.WriteLinesLabelled(cmd.CommandID, cmdlen, ConsoleColor.Yellow, cmd.Description);
-					}
-
-					Console.WriteLine();
-					ColorConsole.WriteLine("%?Type %@help [command]%@ for help on specific commands%?");
-
-					return null;
-				}
-			});
-
-			application.RegisterCommand(new ConsoleCommand
-			{
 				Title = "Watch for Notifications",
 				CommandAliases = new [] { "watch", "w" },
 				Description = "Displays notifications as they are received",

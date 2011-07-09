@@ -78,6 +78,8 @@
     <Compile Include="ExtensionRunnerExitCode.cs" />
     <Compile Include="ExtensionProcessManager.cs" />
     <Compile Include="ServerExtensionClientManager.cs" />
+    <Compile Include="ServiceManagerCommand.cs" />
+    <Compile Include="ServiceManagerCommands\RestartCommand.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="PersistenceManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

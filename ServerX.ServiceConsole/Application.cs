@@ -176,13 +176,19 @@ namespace ServerX.ServiceConsole
 			ConsoleCommand cc;
 			if(!_commandsByAlias.TryGetValue(cmd, out cc))
 			{
+				if(Client != null)
+				{
+					var response = Client.ExecuteCommand(cmd, cmdargs);
+					ColorConsole.WriteLine(response ?? "%~Ok.");
+					return;
+				}
 				ColorConsole.WriteLine("Unrecognized command: " + cmd, ConsoleColor.Red);
 				return;
 			}
 
-			var response = cc.Handler(this, cc, cmdargs);
-			if(response != null)
-				ColorConsole.WriteLine(response.TrimEnd());
+			var output = cc.Handler(this, cc, cmdargs);
+			if(output != null)
+				ColorConsole.WriteLine(output.TrimEnd());
 		}
 
 		public bool IsWindowsServiceRunning

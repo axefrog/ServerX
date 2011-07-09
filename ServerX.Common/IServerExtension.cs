@@ -15,7 +15,7 @@ namespace ServerX.Common
 		string JsonCall(string name, string data);
 		
 		[OperationContract]
-		string Command(string args);
+		string Command(string[] args);
 
 		bool SupportsCommandLine { [OperationContract] get; }
 		bool SupportsJsonCall { [OperationContract] get; }

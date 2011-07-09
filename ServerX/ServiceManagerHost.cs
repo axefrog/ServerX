@@ -130,14 +130,19 @@ namespace ServerX
 			return _service.ListExtensionsInDirectory(name);
 		}
 
-		public string ExecuteCommand(string command, string args)
+		public string ExecuteCommand(string command, string[] args)
 		{
 			return _service.ExecuteCommand(command, args);
 		}
 
-		public ExtensionInfo[] ListCommands()
+		public ExtensionInfo[] ListExtensionCommands()
 		{
-			return _service.ListCommands();
+			return _service.ListExtensionCommands();
+		}
+
+		public Command[] ListServiceManagerCommands()
+		{
+			return _service.ListServiceManagerCommands();
 		}
 
 		public string GetCommandHelp(string command)

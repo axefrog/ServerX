@@ -37,10 +37,13 @@ namespace ServerX.Common
 		ExtensionInfo[] ListExtensionsInDirectory(string name);
 
 		[OperationContract]
-		string ExecuteCommand(string command, string args);
+		string ExecuteCommand(string command, string[] args);
 
 		[OperationContract]
-		ExtensionInfo[] ListCommands();
+		ExtensionInfo[] ListExtensionCommands();
+
+		[OperationContract]
+		Command[] ListServiceManagerCommands();
 
 		[OperationContract]
 		string GetCommandHelp(string command);
