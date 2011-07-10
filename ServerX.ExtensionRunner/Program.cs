@@ -102,7 +102,7 @@ namespace ServerX.ExtensionRunner
 				}
 
 				// Verify that all plugins are available and if so, run them
-				using(var loader = new SafeExtensionLoader(baseDir, subdir))
+				using(var loader = new SafeExtensionLoader(baseDir, subdir, logger.WriteToConsole))
 				{
 					logger.WriteLine("[list of all plugins]");
 					foreach(var plugin in loader.AllExtensions)

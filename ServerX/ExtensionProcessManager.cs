@@ -76,7 +76,7 @@ namespace ServerX
 		private ProcessInfo StartProcess(string dirName, params string[] extensionIDs)
 		{
 			if(extensionIDs == null || extensionIDs.Length == 0)
-				using(var loader = new SafeExtensionLoader(_extensionsBasePath, dirName))
+				using(var loader = new SafeExtensionLoader(_extensionsBasePath, dirName, false))
 					extensionIDs = loader.AllExtensions.Select(e => e.ID).ToArray();
 
 			var info = new ProcessInfo

@@ -32,9 +32,9 @@ namespace ServerX.Common
 			get { return Channel.Description; }
 		}
 
-		public string JsonCall(string name, string data)
+		public string JsonCall(string name, string[] jsonArgs)
 		{
-			return Channel.JsonCall(name, data);
+			return Channel.JsonCall(name, jsonArgs);
 		}
 
 		public string Command(string[] args)
@@ -45,11 +45,6 @@ namespace ServerX.Common
 		public bool SupportsCommandLine
 		{
 			get { return Channel.SupportsCommandLine; }
-		}
-
-		public bool SupportsJsonCall
-		{
-			get { return Channel.SupportsJsonCall; }
 		}
 
 		protected override void InitCallback(ServerExtensionCallback callback)

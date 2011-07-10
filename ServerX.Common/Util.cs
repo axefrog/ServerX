@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Mono.Options;
 
-namespace ServerX
+namespace ServerX.Common
 {
 	public static class ExtensionMethods
 	{

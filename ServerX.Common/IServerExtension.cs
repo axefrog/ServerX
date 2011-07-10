@@ -12,13 +12,12 @@ namespace ServerX.Common
 		string Description { [OperationContract] get; }
 
 		[OperationContract]
-		string JsonCall(string name, string data);
+		string JsonCall(string name, string[] jsonArgs);
 		
 		[OperationContract]
 		string Command(string[] args);
 
 		bool SupportsCommandLine { [OperationContract] get; }
-		bool SupportsJsonCall { [OperationContract] get; }
 	}
 
 	[ServiceContract(CallbackContract = typeof(IServerExtensionCallback), SessionMode = SessionMode.Allowed)]

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Web.Script.Serialization;
 using Mono.Options;
+using ServerX.Common;
 using ServerX.Service;
 
 namespace ServerX.ServiceConsole.Plugins

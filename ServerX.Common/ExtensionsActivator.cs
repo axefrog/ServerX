@@ -15,7 +15,7 @@ namespace ServerX.Common
 	internal interface IExtensionsActivator : IDisposable
 	{
 		ExtensionInfo[] Extensions { get; }
-		void Init(string dirName);
+		void Init(string dirName, bool outputToConsole);
 		void RunExtensions(Guid guid, params string[] ids);
 	}
 
@@ -25,10 +25,10 @@ namespace ServerX.Common
 		private ExtensionInfo[] _infos;
 		private Logger _logger;
 
-		public void Init(string dirName)
+		public void Init(string dirName, bool outputToConsole)
 		{
 			_dirName = dirName;
-			_logger = new Logger("extension-" + dirName);
+			_logger = new Logger("extension-" + dirName) { WriteToConsole = outputToConsole };
 
 			AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
 			TaskScheduler.UnobservedTaskException += OnTaskSchedulerUnobservedTaskException;

@@ -9,7 +9,7 @@ namespace ServerX.Common
 		private AppDomain _appdomain;
 		private IExtensionsActivator _exts;
 
-		public SafeExtensionLoader(string extensionsBaseDir, string subdirName)
+		public SafeExtensionLoader(string extensionsBaseDir, string subdirName, bool outputToConsole)
 		{
 			_extensionsPath = Path.Combine(extensionsBaseDir, subdirName);
 			var setup = new AppDomainSetup
@@ -21,7 +21,7 @@ namespace ServerX.Common
 			};
 			_appdomain = AppDomain.CreateDomain("ExtensionDirectoryLoader." + subdirName, null, setup);
 			_exts = (IExtensionsActivator)_appdomain.CreateInstanceAndUnwrap("ServerX.Common", "ServerX.Common.ExtensionsActivator");
-			_exts.Init(subdirName);
+			_exts.Init(subdirName, outputToConsole);
 		}
 
 		public ExtensionInfo[] AllExtensions
