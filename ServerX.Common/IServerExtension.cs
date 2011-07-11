@@ -13,6 +13,9 @@ namespace ServerX.Common
 
 		[OperationContract]
 		string JsonCall(string name, string[] jsonArgs);
+
+		[OperationContract]
+		string GetJavaScriptWrapper();
 		
 		[OperationContract]
 		string Command(string[] args);

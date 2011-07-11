@@ -150,9 +150,9 @@ namespace ServerX
 			return _service.ListScripts();
 		}
 
-		public string ExecuteScript(string name)
+		public Result ExecuteScriptFile(string filename)
 		{
-			return _service.ExecuteScript(name);
+			return _service.ExecuteScriptFile(filename);
 		}
 
 		public ScriptInfo GetScript(string name)

@@ -1,6 +1,9 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.ServiceModel;
+using System.Text;
 using System.Text.RegularExpressions;
 using ServerX.Common;
 
@@ -89,5 +92,38 @@ namespace ServerX
 		}
 
 		public event ServiceManagerCallback.ExtensionNotificationHandler ExtensionNotificationReceived;
+
+		public string GetJavaScriptWrappers()
+		{
+			var sb = new StringBuilder();
+			foreach(var client in _clients.Values.ToArray())
+				if(client.Client.State == CommunicationState.Opened)
+				{
+					try
+					{
+						sb.AppendLine(client.Client.GetJavaScriptWrapper());
+					}
+					catch(Exception ex)
+					{
+						sb.AppendLine("// ERROR: Unable to generate wrapper for extension " + client.ID + ": " + ex.Message);
+					}
+				}
+			return sb.ToString();
+		}
+
+		public string JsonCall(string extID, string methodName, string[] jsonArgs)
+		{
+			ClientInfo client = _clients.Values.FirstOrDefault(c => c.ID == extID);
+			if(client == null || client.Client.State != CommunicationState.Opened)
+				return JavaScriptInterface.JsonErrorResponse("The specified extension (" + extID + ") is not currently connected - it may have crashed or be restarting");
+			try
+			{
+				return client.Client.JsonCall(methodName, jsonArgs);
+			}
+			catch(Exception ex)
+			{
+				return JavaScriptInterface.JsonErrorResponse("There was an error communicating with the extension: " + ex.Message);
+			}
+		}
 	}
 }

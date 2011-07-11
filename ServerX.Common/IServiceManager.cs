@@ -49,7 +49,7 @@ namespace ServerX.Common
 		ScriptInfo[] ListScripts();
 
 		[OperationContract]
-		string ExecuteScript(string name);
+		Result ExecuteScriptFile(string filename);
 
 		[OperationContract]
 		ScriptInfo GetScript(string name);

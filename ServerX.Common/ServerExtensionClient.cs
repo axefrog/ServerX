@@ -37,6 +37,11 @@ namespace ServerX.Common
 			return Channel.JsonCall(name, jsonArgs);
 		}
 
+		public string GetJavaScriptWrapper()
+		{
+			return Channel.GetJavaScriptWrapper();
+		}
+
 		public string Command(string[] args)
 		{
 			return Channel.Command(args);

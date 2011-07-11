@@ -113,9 +113,9 @@ namespace ServerX.Common
 			return Channel.ListScripts();
 		}
 
-		public string ExecuteScript(string name)
+		public Result ExecuteScriptFile(string filename)
 		{
-			return Channel.ExecuteScript(name);
+			return Channel.ExecuteScriptFile(filename);
 		}
 
 		public ScriptInfo GetScript(string name)

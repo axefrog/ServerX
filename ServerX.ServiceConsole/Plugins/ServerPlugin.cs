@@ -2,6 +2,7 @@
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
+using System.ServiceModel;
 using System.Threading;
 using System.Web.Script.Serialization;
 using Mono.Options;
@@ -210,6 +211,24 @@ namespace ServerX.ServiceConsole.Plugins
 					ColorConsole.WriteLine("Watch mode deactivated.", ConsoleColor.Green);
 					Console.CursorVisible = true;
 					return null;
+				}
+			});
+
+			application.RegisterCommand(new ConsoleCommand
+			{
+				Title = "Execute Script",
+				CommandAliases = new [] { "exec" },
+				Description = "Executes a script stored on the server",
+				HelpDescription = "Executes a script which has been stored on the server in the Scripts folder.",
+				HelpUsage = "exec {filename}",
+				Handler = (app, command, args) =>
+				{
+					if(args.Length != 1)
+						return "%!You must specify the name of a script file (e.g. %@exec myscript.js%@)";
+					if(app.Client == null || app.Client.State != CommunicationState.Opened)
+						return "%!Not connected to the service manager.";
+					var result = app.Client.ExecuteScriptFile(args[0]);
+					return (result.Success ? "%~" : "%!") + (result.Message ?? "Done.");
 				}
 			});
 		}

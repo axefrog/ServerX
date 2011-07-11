@@ -77,6 +77,11 @@
     <Compile Include="CommandRunner.cs" />
     <Compile Include="ExtensionRunnerExitCode.cs" />
     <Compile Include="ExtensionProcessManager.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Compile Include="ServerExtensionClientManager.cs" />
     <Compile Include="ServiceManagerCommand.cs" />
     <Compile Include="ServiceManagerCommands\RestartCommand.cs" />
@@ -92,7 +97,16 @@
       <Name>ServerX.Common</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources\json2.js" />
+    <Content Include="Resources\scriptrunner.js" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

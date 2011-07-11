@@ -54,6 +54,7 @@ namespace ServerX.Common
 		{
 			if(!(this is TClient))
 				throw new InvalidOperationException("Cannot inherit from ClientBase<TClient, ...> unless the derived type is of type TClient");
+			InnerDuplexChannel.OperationTimeout = new TimeSpan(0, 5, 0);
 			InnerDuplexChannel.Closing += OnInnerDuplexChannelClosing;
 			InnerDuplexChannel.Opening += OnInnerDuplexChannelOpening;
 			InnerDuplexChannel.Faulted += OnInnerDuplexChannelFaulted;

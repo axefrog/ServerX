@@ -1,13 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace ServerX.Common
 {
+	[DataContract, Serializable]
 	public class Result
 	{
+		[DataMember]
 		public bool Success { get; set; }
+
+		[DataMember]
 		public string Message { get; set; }
 
 		public Result()
@@ -16,7 +21,7 @@ namespace ServerX.Common
 
 		public Result(bool success = true, string message = null)
 		{
-			Success = true;
+			Success = success;
 			Message = message;
 		}
 

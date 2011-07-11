@@ -65,6 +65,11 @@ namespace ServerX
 			}
 		}
 
+		internal string JsonCall(string name, string[] jsonArgs)
+		{
+			return JavaScriptInterface.JsonCall(this, name, jsonArgs, JavaScriptInterface.ExcludedServiceManagerJsMethodNames);
+		}
+
 		public DateTime GetServerTime()
 		{
 			return DateTime.Now;
@@ -136,9 +141,11 @@ namespace ServerX
 			throw new NotImplementedException();
 		}
 
-		public string ExecuteScript(string name)
+		public Result ExecuteScriptFile(string filename)
 		{
-			throw new NotImplementedException();
+			var scriptRunner = new ScriptRunner(this, _extClientMgr);
+			var result = scriptRunner.ExecuteJavaScriptFile(filename);
+			return result;
 		}
 
 		public ScriptInfo GetScript(string name)
