@@ -102,6 +102,8 @@ namespace ServerX
 
 		void Run()
 		{
+			if(_cronList.Count == 0)
+				return;
 			var jobs = _cronList;
 			var token = _cancelSource.Token;
 			try
@@ -111,8 +113,7 @@ namespace ServerX
 					_settings.Lock();
 					try
 					{
-						var nextJob = jobs.FirstOrDefault();
-						if(nextJob != null)
+						foreach(var nextJob in jobs)
 						{
 							if(nextJob.NextRun <= DateTime.Now)
 							{
@@ -129,11 +130,11 @@ namespace ServerX
 									_logger.WriteLine("[EXCEPTION] " + ex + Environment.NewLine);
 								}
 								nextJob.Recalculate();
-								jobs.Sort();
 							}
 						}
 						_settings.Values.LastRun = DateTime.Now;
 						_settings.Save();
+						jobs.Sort();
 					}
 					finally
 					{
