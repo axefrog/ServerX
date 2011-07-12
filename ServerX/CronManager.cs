@@ -67,12 +67,8 @@ namespace ServerX
 				if(str.StartsWith("#"))
 					continue;
 
-				var n = str.IndexOf("##");
-				if(n != -1)
-					str = str.Substring(0, n);
-
 				var arr = str.Split(new[] { '\t' }, StringSplitOptions.RemoveEmptyEntries);
-				if(arr.Length != 2)
+				if(arr.Length < 2)
 					continue;
 
 				var cronstr = arr[0].Trim();
