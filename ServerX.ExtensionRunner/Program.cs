@@ -15,7 +15,7 @@ namespace ServerX.ExtensionRunner
 	{
 		static void Main(string[] args)
 		{
-			string subdir = null;
+			string subdir = null, runDebugMethodOnExtension = null;
 			var baseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extensions");
 			Environment.CurrentDirectory = ConfigurationManager.AppSettings["DataDirectory"] ?? AppDomain.CurrentDomain.BaseDirectory;
 			var plugins = new HashSet<string>();
@@ -35,6 +35,7 @@ namespace ServerX.ExtensionRunner
 				},
 				{ "basedir=", "Specifies the base plugins directory (can be relative or absolute)", v => baseDir = Path.IsPathRooted(v) ? v : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, v) },
 				{ "subdir=", "Specifies the extension subdirectory name", v => subdir = v },
+				{ "debug=", "Specifies an extension ID to run the debug method on", v => runDebugMethodOnExtension = v },
 				{ "pid=", "Parent process ID - if specified, this process will close when the parent process closes", v =>
 					{
 						int pid;
@@ -108,7 +109,7 @@ namespace ServerX.ExtensionRunner
 					foreach(var plugin in loader.AllExtensions)
 						logger.WriteLine("\t" + plugin.ID + ": " + plugin.Name + " [" + (plugins.Count == 0 || plugins.Contains(plugin.ID) ? "ACTIVE" : "INACTIVE") + "]");
 					logger.WriteLine("[end of plugins list]");
-					loader.RunExtensions(guid, plugins.ToArray());
+					loader.RunExtensions(guid, runDebugMethodOnExtension, plugins.ToArray());
 				}
 			}
 			catch(OptionException ex)

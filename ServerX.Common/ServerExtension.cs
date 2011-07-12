@@ -103,5 +103,10 @@ namespace ServerX.Common
 				}
 			}
 		}
+
+		public virtual void Debug()
+		{
+			Console.WriteLine("test");
+		}
 	}
 }

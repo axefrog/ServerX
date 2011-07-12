@@ -16,7 +16,7 @@ namespace ServerX.Common
 	{
 		ExtensionInfo[] Extensions { get; }
 		void Init(string dirName, bool outputToConsole);
-		void RunExtensions(Guid guid, params string[] ids);
+		void RunExtensions(Guid guid, string runDebugMethodOnExtension, params string[] ids);
 	}
 
 	[Serializable]
@@ -71,7 +71,7 @@ namespace ServerX.Common
 		private CancellationTokenSource _cancelSource;
 		private string _dirName;
 
-		public void RunExtensions(Guid guid, params string[] ids)
+		public void RunExtensions(Guid guid, string runDebugMethodOnExtension, params string[] ids)
 		{
 			if(ids.Length == 0)
 				ids = _infos.Select(i => i.ID).ToArray();
@@ -99,6 +99,11 @@ namespace ServerX.Common
 						{
 							var extension = ext.Extension;
 							ext.Task = Task.Factory.StartNew(() => extension.Run(_cancelSource, _logger), _cancelSource.Token, atp, TaskScheduler.Current);
+							if(ext.Extension.ID == runDebugMethodOnExtension)
+							{
+								Thread.Sleep(1000); // give the extension a chance to start up
+								ext.Extension.Debug();
+							}
 						}
 
 					ServiceManagerClient client = null;
