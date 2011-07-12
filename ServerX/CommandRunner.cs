@@ -18,6 +18,7 @@ namespace ServerX
 		{
 			_svc = svc;
 			_extmgr = extmgr;
+			Add(ExecCommand.Get());
 			Add(RestartCommand.Get());
 		}
 

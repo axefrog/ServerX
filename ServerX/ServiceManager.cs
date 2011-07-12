@@ -16,6 +16,7 @@ namespace ServerX
 		private ExtensionProcessManager _extProcMgr;
 		private ServerExtensionClientManager _extClientMgr = new ServerExtensionClientManager();
 		private CommandRunner _cmdRunner;
+		private CronManager _cronMgr;
 
 		public ServiceManager()
 		{
@@ -38,6 +39,7 @@ namespace ServerX
 			);
 
 			_cmdRunner = new CommandRunner(this, _extClientMgr);
+			_cronMgr = new CronManager(this);
 
 			StartExtensions();
 		}
@@ -192,6 +194,8 @@ namespace ServerX
 		{
 			_extProcMgr.Dispose();
 			_extProcMgr = null;
+			_cronMgr.Dispose();
+			_cronMgr = null;
 		}
 	}
 }
