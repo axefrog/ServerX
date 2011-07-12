@@ -73,7 +73,6 @@
   <ItemGroup>
     <Compile Include="Application.cs" />
     <Compile Include="CollectionExtensions.cs" />
-    <Compile Include="ColorConsole.cs" />
     <Compile Include="ConsoleCommand.cs" />
     <Compile Include="IConsolePlugin.cs" />
     <Compile Include="Macro.cs" />

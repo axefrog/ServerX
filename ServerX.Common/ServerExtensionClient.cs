@@ -52,6 +52,11 @@ namespace ServerX.Common
 			get { return Channel.SupportsCommandLine; }
 		}
 
+		void IServerExtension.Debug()
+		{
+			throw new NotSupportedException();
+		}
+
 		protected override void InitCallback(ServerExtensionCallback callback)
 		{
 			callback.NotificationReceived += msg =>

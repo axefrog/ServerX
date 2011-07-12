@@ -37,9 +37,9 @@ namespace ServerX.Common
 			_appdomain = null;
 		}
 
-		public void RunExtensions(Guid guid, params string[] ids)
+		public void RunExtensions(Guid guid, string runDebugMethodOnExtension, params string[] ids)
 		{
-			_exts.RunExtensions(guid, ids);
+			_exts.RunExtensions(guid, runDebugMethodOnExtension, ids);
 		}
 	}
 }

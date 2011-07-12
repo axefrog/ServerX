@@ -21,6 +21,8 @@ namespace ServerX.Common
 		string Command(string[] args);
 
 		bool SupportsCommandLine { [OperationContract] get; }
+
+		void Debug();
 	}
 
 	[ServiceContract(CallbackContract = typeof(IServerExtensionCallback), SessionMode = SessionMode.Allowed)]
