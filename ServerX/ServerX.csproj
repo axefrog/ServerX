@@ -75,6 +75,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandRunner.cs" />
+    <Compile Include="CronManager.cs" />
     <Compile Include="ExtensionRunnerExitCode.cs" />
     <Compile Include="ExtensionProcessManager.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
@@ -84,6 +85,7 @@
     </Compile>
     <Compile Include="ServerExtensionClientManager.cs" />
     <Compile Include="ServiceManagerCommand.cs" />
+    <Compile Include="ServiceManagerCommands\ExecCommand.cs" />
     <Compile Include="ServiceManagerCommands\RestartCommand.cs" />
     <Compile Include="PersistenceManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
