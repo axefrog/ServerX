@@ -32,7 +32,7 @@ namespace ServerX.Common
 			return JavaScriptInterface.GenerateJavaScriptWrapper(this);
 		}
 
-		internal bool RunCalled { get; private set; }
+		public bool RunCalled { get; private set; }
 		public void Run(CancellationTokenSource tokenSource, Logger logger)
 		{
 			Logger = logger;
@@ -57,7 +57,7 @@ namespace ServerX.Common
 
 		public void RegisterClient(Guid id)
 		{
-			Logger.WriteLine("[" + ID + "] Incoming client registration: " + id);
+			Logger.WriteLine("[" + ID + "] Client connected -> registration ID: " + id);
 			if(OperationContext.Current != null)
 				_clients.AddOrUpdate(id, OperationContext.Current, (k,v) => OperationContext.Current);
 			else
@@ -102,6 +102,21 @@ namespace ServerX.Common
 					}
 				}
 			}
+		}
+
+		public virtual bool HasMainLoop
+		{
+			get { return false; }
+		}
+
+		/// <summary>
+		/// This method is only for specialised extensions that have processes requiring execution in the main thread.
+		/// In general, these sorts of extensions should be run in isolation from other extensions. If multiple active
+		/// extensions are found that want to run in the main app thread, an exception will be thrown as they should be
+		/// run in separate processes. <see cref="HasMainLoop"/> should return true in order for this method to run.
+		/// </summary>
+		public virtual void RunMainAppThreadLoop(CancellationTokenSource cancelSource, Logger logger)
+		{
 		}
 
 		public virtual void Debug()

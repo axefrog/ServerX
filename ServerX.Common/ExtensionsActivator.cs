@@ -17,6 +17,8 @@ namespace ServerX.Common
 		ExtensionInfo[] Extensions { get; }
 		void Init(string dirName, bool outputToConsole);
 		void RunExtensions(Guid guid, string runDebugMethodOnExtension, params string[] ids);
+		void SignalCancellation();
+		void RunMainAppThread();
 	}
 
 	[Serializable]
@@ -35,21 +37,38 @@ namespace ServerX.Common
 
 			var list = new List<ExtensionInfo>();
 			var files = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory).GetFiles("*.dll");
+			var asmExclusionsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "loader.exclude.txt");
+			var exclusions = new HashSet<string>();
+			if(File.Exists(asmExclusionsPath))
+				exclusions = new HashSet<string>(
+				File.ReadAllLines(asmExclusionsPath)
+					.Select(s => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, s).ToLower())
+					.Where(File.Exists));
+
 			foreach(var file in files)
 			{
-				var asm = Assembly.Load(Path.GetFileNameWithoutExtension(file.Name));
-				var typeMap = (from t in asm.GetTypes()
-							   where t.GetInterfaces().Any(i => i == typeof(IServerExtension)) && t.IsClass && !t.IsAbstract && t.GetConstructors().Where(i => i.GetParameters().Count() == 0).Any()
-							   select new { Ext = (IServerExtension)Activator.CreateInstance(t) }).ToDictionary(k => k.Ext.ID, v => v.Ext);
-				list.AddRange(
-					typeMap.Values.Select(ext => new ExtensionInfo
-					{
-						ID = ext.ID,
-						Name = ext.Name,
-						Description = ext.Description,
-						AssemblyQualifiedName = ext.GetType().AssemblyQualifiedName
-					})
-				);
+				if(exclusions.Contains(file.FullName.ToLower()))
+					continue;
+				try
+				{
+					var asm = Assembly.Load(Path.GetFileNameWithoutExtension(file.Name));
+					var typeMap = (from t in asm.GetTypes()
+								   where t.GetInterfaces().Any(i => i == typeof(IServerExtension)) && t.IsClass && !t.IsAbstract && t.GetConstructors().Where(i => i.GetParameters().Count() == 0).Any()
+								   select new { Ext = (IServerExtension)Activator.CreateInstance(t) }).ToDictionary(k => k.Ext.ID, v => v.Ext);
+					list.AddRange(
+						typeMap.Values.Select(ext => new ExtensionInfo
+						{
+							ID = ext.ID,
+							Name = ext.Name,
+							Description = ext.Description,
+							AssemblyQualifiedName = ext.GetType().AssemblyQualifiedName
+						})
+						);
+				}
+				catch(BadImageFormatException)
+				{
+					continue;
+				}
 			}
 			_infos = list.ToArray();
 			_logger.WriteLine("[MAIN] Obtained info for " + _infos.Length + " available extensions");
@@ -68,7 +87,8 @@ namespace ServerX.Common
 			public Task Task { get; set; }
 		}
 		private Dictionary<string, RunningExtension> _runningExtensions = new Dictionary<string, RunningExtension>();
-		private CancellationTokenSource _cancelSource;
+		private bool _allExtensionsStarted;
+		private CancellationTokenSource _cancelSource = new CancellationTokenSource();
 		private string _dirName;
 
 		public void RunExtensions(Guid guid, string runDebugMethodOnExtension, params string[] ids)
@@ -85,7 +105,6 @@ namespace ServerX.Common
 			{
 				foreach(var id in ids)
 					_runningExtensions.Add(id, Activate(id));
-				_cancelSource = new CancellationTokenSource();
 			}
 
 			const TaskCreationOptions atp = TaskCreationOptions.AttachedToParent;
@@ -95,16 +114,26 @@ namespace ServerX.Common
 				{
 					_logger.WriteLine("Extension activation/monitoring task starting...");
 					lock(this)
+					{
 						foreach(var ext in _runningExtensions.Values)
 						{
 							var extension = ext.Extension;
 							ext.Task = Task.Factory.StartNew(() => extension.Run(_cancelSource, _logger), _cancelSource.Token, atp, TaskScheduler.Current);
-							if(ext.Extension.ID == runDebugMethodOnExtension)
-							{
-								Thread.Sleep(1000); // give the extension a chance to start up
-								ext.Extension.Debug();
-							}
 						}
+					}
+					_allExtensionsStarted = true;
+					IEnumerable<RunningExtension> debugs;
+					lock(this)
+						debugs = _runningExtensions.Values.Where(ext => ext.Extension.ID == runDebugMethodOnExtension);
+					foreach(var ext in debugs)
+					{
+						if(ext.Extension.ID == runDebugMethodOnExtension)
+						{
+							Thread.Sleep(1000); // give the extension a chance to start up
+							ext.Extension.Debug();
+						}
+					}
+
 
 					ServiceManagerClient client = null;
 					if(guid != Guid.Empty)
@@ -163,6 +192,35 @@ namespace ServerX.Common
 			{
 			}
 			_logger.WriteLine("[MAIN] Task threads have all ended.");
+		}
+
+		/// <summary>
+		/// This method is only for specialised extensions that have processes requiring execution in the main thread.
+		/// In general, these sorts of extensions should be run in isolation from other extensions. If multiple active
+		/// extensions are found that want to run in the main app thread, an exception will be thrown as they should be
+		/// run in separate processes. This method will block until extensions are loaded and running.
+		/// </summary>
+		public void RunMainAppThread()
+		{
+			while(!_allExtensionsStarted && !_cancelSource.IsCancellationRequested)
+				Thread.Sleep(100);
+			IEnumerable<RunningExtension> list;
+			lock(this)
+				list = _runningExtensions.Values.Where(e => e.Extension.HasMainLoop);
+			if(list.Count() > 1)
+				throw new Exception("Multiple active extensions were found that have RunMainAppThreadLoop() implementations. Only one active extension is allowed to return true for HasMainLoop.");
+			var ext = list.FirstOrDefault();
+			if(ext != null && !_cancelSource.IsCancellationRequested)
+			{
+				while(!ext.Extension.RunCalled)
+					Thread.Yield();
+				ext.Extension.RunMainAppThreadLoop(_cancelSource, _logger);
+			}
+		}
+
+		public void SignalCancellation()
+		{
+			_cancelSource.Cancel();
 		}
 
 		RunningExtension Activate(string id)

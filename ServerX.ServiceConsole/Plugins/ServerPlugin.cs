@@ -143,10 +143,6 @@ namespace ServerX.ServiceConsole.Plugins
 							return null;
 
 						case ServiceAction.Install:
-							File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServiceParams.txt"), new JavaScriptSerializer().Serialize(new ServiceInstallParams
-							{
-								Port = prms.Port
-							}));
 							if(!prms.Local && app.IsWindowsServiceRunning)
 								return "%!Service is already installed.";
 							

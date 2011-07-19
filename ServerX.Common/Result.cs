@@ -10,19 +10,30 @@ namespace ServerX.Common
 	public class Result
 	{
 		[DataMember]
-		public bool Success { get; set; }
+		public bool Success { get; protected set; }
 
 		[DataMember]
-		public string Message { get; set; }
+		public string Message { get; protected set; }
 
-		public Result()
+		protected Result()
 		{
 		}
 
-		public Result(bool success = true, string message = null)
+		public Result(bool success, string message)
 		{
 			Success = success;
 			Message = message;
+		}
+
+		static Result()
+		{
+			Succeeded = new Result { Success = true };
+		}
+
+		public static Result Succeeded { get; private set; }
+		public static Result Failed(string message)
+		{
+			return new Result { Message = message };
 		}
 
 		public static bool operator ==(Result a, bool b)

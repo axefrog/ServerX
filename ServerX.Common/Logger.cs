@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Configuration;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -10,7 +13,9 @@ namespace ServerX.Common
 	public class Logger : IDisposable
 	{
 		private readonly string _name;
+		private readonly string _baseDirectory;
 		private readonly bool _preventDateSplitting;
+		private readonly Logger[] _innerLoggers;
 		private readonly Mutex _mutex;
 		private string _path;
 
@@ -20,26 +25,46 @@ namespace ServerX.Common
 		/// Constructs a new Logger instance
 		/// </summary>
 		/// <param name="name">The filename-friendly name of this particular logger</param>
+		/// <param name="baseDirectory">An optional alternate location in which the log file should be stored</param>
 		/// <param name="preventDateSplitting">Prevents the log from being split into separate files when transitioning from one day to the next</param>
-		public Logger(string name, bool preventDateSplitting = false)
+		/// <param name="innerLoggers">Any additional <see cref="Logger" /> objects that should also be written to when logging</param>
+		public Logger(string name, string baseDirectory = null, bool preventDateSplitting = false, params Logger[] innerLoggers)
 		{
 			_mutex = new Mutex(false, "Global.ServerX.Logger." + name.GetHashCode());
 			_name = name;
+			_baseDirectory = baseDirectory;
 			_preventDateSplitting = preventDateSplitting;
+			_innerLoggers = innerLoggers.Where(l => l != null).ToArray();
 			UpdatePath();
 		}
 
 		void UpdatePath()
 		{
-			var dirpath = ConfigurationManager.AppSettings["DataDirectory"] ?? Environment.CurrentDirectory;
-			_path = Path.Combine(dirpath, "Logs", DateTime.UtcNow.ToString("yyyy-MM-dd"), _name + ".log");
-			var dir = new FileInfo(_path).Directory;
-			using(var mutex = new Mutex(false, "Global.ServerX.Logger." + dir.FullName.GetHashCode()))
+			try
 			{
-				mutex.WaitOne();
-				if(!dir.Exists)
-					dir.Create();
-				mutex.ReleaseMutex();
+				var ext = _name.EndsWith(".txt") ? "" : ".log";
+				var dirpath = _baseDirectory ?? Path.Combine(ConfigurationManager.AppSettings["DataDirectory"] ?? Environment.CurrentDirectory, "Logs");
+				if(_preventDateSplitting)
+					_path = Path.Combine(dirpath, _name + ext);
+				else
+					_path = Path.Combine(dirpath, DateTime.UtcNow.ToString("yyyy-MM-dd"), _name + ext);
+				var dir = new FileInfo(_path).Directory;
+				using(var mutex = new Mutex(false, "Global.ServerX.Logger." + dir.FullName.GetHashCode()))
+				{
+					mutex.WaitOne();
+					if(!dir.Exists)
+						dir.Create();
+					mutex.ReleaseMutex();
+				}
+			}
+			catch(UnauthorizedAccessException ex)
+			{
+				var src = "ServerX";
+				var log = "Application";
+				if(!EventLog.SourceExists(src))
+				    EventLog.CreateEventSource(src, log);
+				EventLog.WriteEntry(src, "UnauthorizedAccessException in UpdatePath() in Logger (Account: " + WindowsIdentity.GetCurrent().Name + "): " + ex, EventLogEntryType.Error);
+				throw;
 			}
 		}
 
@@ -52,6 +77,8 @@ namespace ServerX.Common
 		DateTime _lastWrite = DateTime.MinValue;
 		public void Write(object o)
 		{
+			foreach(var logger in _innerLoggers)
+				logger.Write(o);
 			o = _colorRx.Replace(o.ToString(), "");
 			_mutex.WaitOne();
 			if(!_preventDateSplitting && DateTime.UtcNow.Day != _lastWrite.Day)

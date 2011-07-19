@@ -114,7 +114,7 @@ namespace ServerX
 
 		public ExtensionInfo[] ListExtensionsInDirectory(string name)
 		{
-			using(var pl = new SafeExtensionLoader(_extensionsBaseDir.FullName, name, false))
+			using(var pl = new SafeExtensionLoader(_extensionsBaseDir.FullName, name, false, null))
 				return pl.AllExtensions;
 		}
 

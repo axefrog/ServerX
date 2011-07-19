@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration;
 using System.IO;
 using System.ServiceModel;
 using System.ServiceProcess;
@@ -13,6 +14,8 @@ namespace ServerX.Service
 	{
 		public WindowsService()
 		{
+			Environment.CurrentDirectory = ConfigurationManager.AppSettings["DataDirectory"] ?? AppDomain.CurrentDomain.BaseDirectory;
+			_logger = new Logger("windows-service");
 			try
 			{
 				var prmsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServiceParams.txt");
@@ -45,7 +48,7 @@ namespace ServerX.Service
 
 		private ServiceHost _serviceHost;
 
-		Logger _logger = new Logger("windows-service");
+		Logger _logger;
 		protected override void OnStart(string[] args)
 		{
 			_logger.Write("Service starting...\r\n");

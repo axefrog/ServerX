@@ -102,14 +102,20 @@ namespace ServerX.ExtensionRunner
 					}
 				}
 
-				// Verify that all plugins are available and if so, run them
-				using(var loader = new SafeExtensionLoader(baseDir, subdir, logger.WriteToConsole))
+				using(var loader = new SafeExtensionLoader(baseDir, subdir, logger.WriteToConsole, src))
 				{
-					logger.WriteLine("[list of all plugins]");
-					foreach(var plugin in loader.AllExtensions)
-						logger.WriteLine("\t" + plugin.ID + ": " + plugin.Name + " [" + (plugins.Count == 0 || plugins.Contains(plugin.ID) ? "ACTIVE" : "INACTIVE") + "]");
-					logger.WriteLine("[end of plugins list]");
-					loader.RunExtensions(guid, runDebugMethodOnExtension, plugins.ToArray());
+					var runExtsTask = Task.Factory.StartNew(() =>
+					{
+						// Verify that all plugins are available and if so, run them
+						logger.WriteLine("[list of all plugins]");
+						foreach(var plugin in loader.AllExtensions)
+							logger.WriteLine("\t" + plugin.ID + ": " + plugin.Name + " [" + (plugins.Count == 0 || plugins.Contains(plugin.ID) ? "ACTIVE" : "INACTIVE") + "]");
+						logger.WriteLine("[end of plugins list]");
+						loader.RunExtensions(guid, runDebugMethodOnExtension, plugins.ToArray());
+					}, src.Token);
+
+					loader.RunMainAppThread();
+					Task.WaitAll(new[] { runExtsTask }, src.Token);
 				}
 			}
 			catch(OptionException ex)

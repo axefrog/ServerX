@@ -52,7 +52,7 @@ namespace ServerX
 				var response = _engine.Run(js);
 				if(response is JsString || response is string)
 					return new Result(true, response.ToString());
-				return new Result();
+				return Result.Succeeded;
 			}
 			catch(JintException ex)
 			{

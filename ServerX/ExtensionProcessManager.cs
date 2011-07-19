@@ -76,7 +76,7 @@ namespace ServerX
 		private ProcessInfo StartProcess(string dirName, params string[] extensionIDs)
 		{
 			if(extensionIDs == null || extensionIDs.Length == 0)
-				using(var loader = new SafeExtensionLoader(_extensionsBasePath, dirName, false))
+				using(var loader = new SafeExtensionLoader(_extensionsBasePath, dirName, false, null))
 					extensionIDs = loader.AllExtensions.Select(e => e.ID).ToArray();
 
 			var info = new ProcessInfo
@@ -239,11 +239,7 @@ namespace ServerX
 				process.RequestRestart = true;
 				count++;
 			}
-			return new Result
-			{
-				Success = count > 0,
-				Message = count + " matching extension process(es) were flagged for restart."
-			};
+			return new Result(count > 0, count + " matching extension process(es) were flagged for restart.");
 		}
 	}
 }

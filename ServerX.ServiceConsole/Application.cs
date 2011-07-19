@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.ServiceModel;
 using System.Text.RegularExpressions;
+using System.Web.Script.Serialization;
 using ServerX.Common;
 using ServerX.Service;
 
@@ -134,7 +135,11 @@ namespace ServerX.ServiceConsole
 		{
 			StopHost();
 			if(!local)
+			{
+				File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServiceParams.txt"),
+					new JavaScriptSerializer().Serialize(new ServiceInstallParams { Port = port }));
 				return WindowsServiceInstaller.Install(false, new string[0]);
+			}
 
 			var host = new ServiceHost(typeof(ServiceManagerHost));
 			host.AddServiceEndpoint(typeof(IServiceManagerHost), new NetTcpBinding("Default"), "net.tcp://localhost:" + port + "/ServiceManagerHost");
