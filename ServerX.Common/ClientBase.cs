@@ -22,12 +22,12 @@ namespace ServerX.Common
 			private set { _id = value; }
 		}
 
-		public ClientBase()
+		protected ClientBase()
 			: this(new TCallback())
 		{
 		}
 
-		public ClientBase(string endpointConfigurationName)
+		protected ClientBase(string endpointConfigurationName)
 			: this(endpointConfigurationName, new TCallback())
 		{
 		}
@@ -38,7 +38,7 @@ namespace ServerX.Common
 			Construct(callback);
 		}
 
-		private ClientBase(string endpointConfigurationName, TCallback callback)
+		protected ClientBase(string endpointConfigurationName, TCallback callback)
 			: base(callback, endpointConfigurationName)
 		{
 			Construct(callback);
