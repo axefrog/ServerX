@@ -238,11 +238,12 @@ namespace ServerX.Common
 			host.Closed += (s,e) => OnServiceHostClosed(id);
 			host.UnknownMessageReceived += (s,e) => OnServiceHostUnknownMessageReceived(id, e);
 
+			var port = ConfigurationManager.AppSettings[string.Concat(_dirName, ".", id, ".Port")];
 			var endPoint = new ServiceEndpoint(
 				ContractDescription.GetContract(ext.ContractType),
 				new NetTcpBinding("Default"),
-				new EndpointAddress(string.Concat("net.tcp://localhost:", (ConfigurationManager.AppSettings[string.Concat(_dirName, ".", id, ".Port")] ?? "0"), "/", id))
-			) { ListenUriMode = ListenUriMode.Unique };
+				new EndpointAddress(string.Concat("net.tcp://localhost:", (port ?? "0"), "/", id))
+			) { ListenUriMode = port == null ? ListenUriMode.Unique : ListenUriMode.Explicit };
 			host.AddServiceEndpoint(endPoint);
 			host.Open();
 

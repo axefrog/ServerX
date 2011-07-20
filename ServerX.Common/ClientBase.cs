@@ -121,16 +121,15 @@ namespace ServerX.Common
 					{
 					}
 			}
+			catch(ProtocolException)
+			{
+				TimedOut = true;
+				try { Close(); } catch { }
+			}
 			catch(TimeoutException)
 			{
 				TimedOut = true;
-				try
-				{
-					Close();
-				}
-				catch
-				{
-				}
+				try { Close(); } catch { }
 			}
 		}
 

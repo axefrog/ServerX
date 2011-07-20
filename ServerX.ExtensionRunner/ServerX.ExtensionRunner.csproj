@@ -89,6 +89,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Libraries\Domainface.WebAutomation\Domainface.WebAutomation.csproj">
+      <Project>{2C9E0F52-01BA-47DA-8EEB-32DEA91FB90B}</Project>
+      <Name>Domainface.WebAutomation</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ServerX.Common\ServerX.Common.csproj">
       <Project>{9237CC64-970E-48B7-BC2B-5B8EAA304766}</Project>
       <Name>ServerX.Common</Name>

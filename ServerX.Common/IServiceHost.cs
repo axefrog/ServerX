@@ -17,7 +17,7 @@ namespace ServerX.Common
 
 	public abstract class ServiceCallbackBase
 	{
-		public void Notify(string message)
+		public virtual void Notify(string message)
 		{
 			var handler = NotificationReceived;
 			if(handler != null)
