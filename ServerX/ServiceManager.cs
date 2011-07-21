@@ -25,21 +25,17 @@ namespace ServerX
 			if(_extensionsBaseDir.GetFiles().Select(f => f.Extension.ToLower()).Any(ext => _extensionFileExtensions.Contains(ext)))
 				throw new Exception("The extensions directory currently contains assemblies and/or executables. Extensions should be located in subdirectories of the Extensions folder; not the Extensions directory itself.");
 
-			_extClientMgr.ExtensionNotificationReceived += (extID, extName, message) =>
+			_extClientMgr.ExtensionNotificationReceived += (extID, extName, source, message) =>
 			{
 				
 				var handler = ExtensionNotificationReceived;
 				if(handler != null)
-					handler(extID, extName, message);
+					handler(extID, extName, source, message);
 			};
 
 			var extProcLog = new Logger("ext-proc-mgr");
-			extProcLog.MessageLogged += msg =>
-			{
-				var handler = ServiceManagerNotificationReceived;
-				if(handler != null)
-					handler("Extension Manager", msg);
-			};
+			extProcLog.MessageLogged += msg => Notify("Extension Manager", msg);
+
 			_extProcMgr = new ExtensionProcessManager(
 				extProcLog,
 				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServerX.Run.exe"),
@@ -48,7 +44,16 @@ namespace ServerX
 			_extCfgMgr = new ExtensionsConfigFileManager(extProcLog, _extProcMgr);
 
 			_cmdRunner = new CommandRunner(this, _extClientMgr);
-			_cronMgr = new CronManager(this);
+			var cronLog = new Logger("cron");
+			cronLog.MessageLogged += msg => Notify("Cron Manager", msg);
+			_cronMgr = new CronManager(this, cronLog);
+		}
+
+		private void Notify(string src, string msg)
+		{
+			var handler = ServiceManagerNotificationReceived;
+			if(handler != null)
+				handler(src, msg);
 		}
 
 		public event ServiceManagerCallback.ExtensionNotificationHandler ExtensionNotificationReceived;

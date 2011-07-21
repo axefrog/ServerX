@@ -32,6 +32,7 @@ namespace ServerX.ServiceConsole.Plugins
 			public ServiceAction Action = ServiceAction.Status;
 			public bool Local;
 			public bool AutoConnect;
+			public bool Watch { get; set; }
 
 			public ServiceCommandParams()
 			{
@@ -89,6 +90,11 @@ namespace ServerX.ServiceConsole.Plugins
 						prms.Port = port;
 					}
 				},
+				{ "watch|w", "Puts the console into watch mode if --connect is also specified", v =>
+					{
+						prms.Watch = true;
+					}
+				},
 			};
 		}
 
@@ -112,6 +118,19 @@ namespace ServerX.ServiceConsole.Plugins
 			};
 		}
 
+		private void Watch(Application app)
+		{
+			Console.CursorVisible = false;
+			ColorConsole.WriteLine("%~Watch mode is active.%~ %?Press any key to exit watch mode.%?");
+			app.DisplayServerNotifications = true;
+			while(!Console.KeyAvailable)
+				Thread.Sleep(10);
+			app.DisplayServerNotifications = false;
+			Console.ReadKey(true);
+			ColorConsole.WriteLine("Watch mode deactivated.", ConsoleColor.Green);
+			Console.CursorVisible = true;
+		}
+
 		public void Init(Application application)
 		{
 			application.RegisterCommand(new ConsoleCommand
@@ -125,6 +144,7 @@ namespace ServerX.ServiceConsole.Plugins
 				HelpRemarks = "Note that if no port is specified, the port will default to " + DefaultPort + ".",
 				Handler = (app, command, args) =>
 				{
+					app.DisplayServerNotifications = true;
 					var prms = new ServiceCommandParams();
 					var options = GetServiceCommandOptions(prms);
 					try
@@ -143,13 +163,20 @@ namespace ServerX.ServiceConsole.Plugins
 							return null;
 
 						case ServiceAction.Install:
+							bool success = true;
 							if(!prms.Local && app.IsWindowsServiceRunning)
-								return "%!Service is already installed.";
-							
-							var success = app.StartHost(prms.Port, prms.Local);
-							ColorConsole.WriteLine(success ? "%~Service now running on port " + prms.Port + "." : "%~Unable to start service on port " + prms.Port + ".");
+								ColorConsole.WriteLine("%!Service is already installed.%!");
+							else
+							{
+								success = app.StartHost(prms.Port, prms.Local);
+								ColorConsole.WriteLine(success ? "%~Service now running on port " + prms.Port + "." : "%~Unable to start service on port " + prms.Port + ".");
+							}
 							if(prms.AutoConnect && success)
-								return app.Connect("localhost", prms.Port);
+							{
+								ColorConsole.WriteLine(app.Connect("localhost", prms.Port));
+								if(prms.Watch)
+									Watch(app);
+							}
 							return null;
 
 						case ServiceAction.Uninstall:
@@ -197,15 +224,7 @@ namespace ServerX.ServiceConsole.Plugins
 				HelpDescription = "Puts the console into an idle state where it will display any server notifications received.",
 				Handler = (app, command, args) =>
 				{
-					Console.CursorVisible = false;
-					ColorConsole.WriteLine("%~Watch mode is active.%~ %?Press any key to exit watch mode.%?");
-					app.DisplayServerNotifications = true;
-					while(!Console.KeyAvailable)
-						Thread.Sleep(10);
-					app.DisplayServerNotifications = false;
-					Console.ReadKey(true);
-					ColorConsole.WriteLine("Watch mode deactivated.", ConsoleColor.Green);
-					Console.CursorVisible = true;
+					Watch(app);
 					return null;
 				}
 			});

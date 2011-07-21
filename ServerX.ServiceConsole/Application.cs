@@ -119,11 +119,11 @@ namespace ServerX.ServiceConsole
 				handler(source, message);
 		}
 
-		void OnExtensionNotificationReceived(string extID, string extName, string message)
+		void OnExtensionNotificationReceived(string extID, string extName, string source, string message)
 		{
 			var handler = ExtensionNotificationReceived;
 			if(handler != null)
-				handler(extID, extName, message);
+				handler(extID, extName, source, message);
 		}
 
 		void OnServiceDisconnected(ServiceManagerClient psc)

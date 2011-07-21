@@ -15,7 +15,7 @@ namespace ServerX
 		{
 			_exlogger = new Logger("servicemanager-exceptions");
 			_service = new ServiceManager();
-			_service.ExtensionNotificationReceived += (extID, extName, message) => CallbackEachClient(c => c.ServerExtensionNotify(extID, extName, message));
+			_service.ExtensionNotificationReceived += (extID, extName, source, message) => CallbackEachClient(c => c.ServerExtensionNotify(extID, extName, source, message));
 			_service.ServiceManagerNotificationReceived += (source, message) => CallbackEachClient(c => c.ServiceManagerNotify(source, message));
 		}
 

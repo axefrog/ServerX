@@ -65,13 +65,13 @@ namespace ServerX.ServiceConsole
 		void OnNotificationReceived(string source, string message)
 		{
 			if(_app.DisplayServerNotifications)
-				ColorConsole.WriteLinesLabelled("Service Manager", 15, ConsoleColor.Cyan, message);
+				ColorConsole.WriteLinesLabelled("Service Manager", 15, ConsoleColor.Cyan, (!string.IsNullOrWhiteSpace(source) ? "%*[" + source + "]%* " : "") + message);
 		}
 
-		void OnExtensionNotificationReceived(string extID, string extName, string message)
+		void OnExtensionNotificationReceived(string extID, string extName, string source, string message)
 		{
 			if(_app.DisplayServerNotifications)
-				ColorConsole.WriteLinesLabelled(extName, extName.Length, ConsoleColor.Blue, message);
+				ColorConsole.WriteLinesLabelled(extName, extName.Length, ConsoleColor.Magenta, (!string.IsNullOrWhiteSpace(source) ? "%*[" + source + "]%* " : "") + message);
 		}
 
 		//void OnStatusChanged(string plugin, string status)

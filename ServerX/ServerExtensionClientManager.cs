@@ -47,7 +47,7 @@ namespace ServerX
 			{
 				var handler = ExtensionNotificationReceived;
 				if(handler != null)
-					handler(info.ID, info.Name, msg);
+					handler(info.ID, info.Name, src, msg);
 			};
 
 			// make sure the extension ID is unique

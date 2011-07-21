@@ -31,11 +31,11 @@ namespace ServerX.Common
 				if(handler != null)
 					handler(src, msg);
 			};
-			callback.ExtensionNotificationReceived += (extID, extName, msg) =>
+			callback.ExtensionNotificationReceived += (extID, extName, source, msg) =>
 			{
 				var handler = ExtensionNotificationReceived;
 				if(handler != null)
-					handler(extID, extName, msg);
+					handler(extID, extName, source, msg);
 			};
 		}
 
@@ -160,14 +160,14 @@ namespace ServerX.Common
 
 	public class ServiceManagerCallback : IServiceManagerCallback
 	{
-		public void ServerExtensionNotify(string extID, string extName, string message)
+		public void ServerExtensionNotify(string extID, string extName, string source, string message)
 		{
 			var handler = ExtensionNotificationReceived;
 			if(handler != null)
-				handler(extID, extName, message);
+				handler(extID, extName, source, message);
 		}
 
-		public delegate void ExtensionNotificationHandler(string extID, string extName, string message);
+		public delegate void ExtensionNotificationHandler(string extID, string extName, string source, string message);
 		public event ExtensionNotificationHandler ExtensionNotificationReceived;
 
 		public void ServiceManagerNotify(string source, string message)

@@ -87,6 +87,6 @@ namespace ServerX.Common
 		void ServiceManagerNotify(string source, string message);
 
 		[OperationContract(IsOneWay = true)]
-		void ServerExtensionNotify(string extID, string extName, string message);
+		void ServerExtensionNotify(string extID, string extName, string source, string message);
 	}
 }

@@ -18,11 +18,12 @@ namespace ServerX
 		FileSystemWatcher _fsw;
 		CancellationTokenSource _cancelSource;
 		PersistenceManager<CronManagerSettings> _settings = new PersistenceManager<CronManagerSettings>("cron-settings");
-		Logger _logger = new Logger("cron");
+		Logger _logger;
 
-		public CronManager(ServiceManager svc)
+		public CronManager(ServiceManager svc, Logger logger)
 		{
 			_svc = svc;
+			_logger = logger;
 			Init();
 		}
 
@@ -56,6 +57,7 @@ namespace ServerX
 		List<CronJob> _cronList;
 		void ReadAndParseFile()
 		{
+			_logger.WriteLine("Parsing cron.txt file...");
 			_cronList = new List<CronJob>();
 
 			foreach(var line in File.ReadAllLines(_file.FullName))
@@ -91,7 +93,8 @@ namespace ServerX
 
 				_cronList.Add(new CronJob(schedule, cronstr, cmd, args));
 			}
-			_logger.WriteLine("[PARSEFILE] Found " + _cronList.Count + " cron job(s) - " + DateTime.Now + Environment.NewLine);
+			_logger.WriteLine("Found " + _cronList.Count + " cron job(s) - " + DateTime.Now + Environment.NewLine);
+			_logger.WriteLine("Cron job list successfully updated from config file.");
 		}
 
 		void OnCronFileChanged(object sender, FileSystemEventArgs e)
@@ -117,13 +120,13 @@ namespace ServerX
 						{
 							if(nextJob.NextRun <= DateTime.Now)
 							{
-								_logger.WriteLine("[EXECUTE] " + nextJob.CronString + " => " + nextJob.Command + " " + nextJob.Args.Concat(" "));
+								_logger.WriteLine("Executing: " + nextJob.CronString + " => " + nextJob.Command + " " + nextJob.Args.Concat(" "));
 								string response;
 								try
 								{
 									token.ThrowIfCancellationRequested();
 									response = _svc.ExecuteCommand(nextJob.Command, nextJob.Args);
-									_logger.WriteLine("[RESPONSE] " + (response ?? "(null response)") + Environment.NewLine);
+									_logger.WriteLine("Execution finished: " + (response ?? "(null response)") + Environment.NewLine);
 								}
 								catch(Exception ex)
 								{
