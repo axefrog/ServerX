@@ -69,9 +69,9 @@ namespace ServerX.Common
 			// this method contains no code - the very act of calling it prevents a connected session from timing out
 		}
 
-		protected void Notify(string message)
+		protected void Notify(string source, string message)
 		{
-			CallbackEachClient(cb => cb.Notify(message));
+			CallbackEachClient(cb => cb.Notify(source, message));
 		}
 
 		private void CallbackEachClient(Action<IServerExtensionCallback> callback)

@@ -112,11 +112,11 @@ namespace ServerX.ServiceConsole
 			return "%~Connected. Server time is " + dt + ".";
 		}
 
-		void OnNotificationReceived(string message)
+		void OnNotificationReceived(string source, string message)
 		{
 			var handler = NotificationReceived;
 			if(handler != null)
-				handler(message);
+				handler(source, message);
 		}
 
 		void OnExtensionNotificationReceived(string extID, string extName, string message)

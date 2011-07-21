@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.ServiceModel;
-using System.Timers;
 using ServerX.Common;
 
 namespace ServerX
@@ -13,16 +11,12 @@ namespace ServerX
 	{
 		ServiceManager _service;
 
-		Timer _timer;
 		public ServiceManagerHost()
 		{
 			_exlogger = new Logger("servicemanager-exceptions");
 			_service = new ServiceManager();
 			_service.ExtensionNotificationReceived += (extID, extName, message) => CallbackEachClient(c => c.ServerExtensionNotify(extID, extName, message));
-
-			_timer = new Timer(1000);
-			_timer.Elapsed += (s,e) => CallbackEachClient(cb => cb.ServiceManagerNotify("Test."));
-			_timer.Start();
+			_service.ServiceManagerNotificationReceived += (source, message) => CallbackEachClient(c => c.ServiceManagerNotify(source, message));
 		}
 
 		Dictionary<Guid, OperationContext> _clients = new Dictionary<Guid, OperationContext>();

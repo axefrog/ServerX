@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ServerX.Common;
@@ -13,12 +12,13 @@ namespace ServerX
 {
 	public class ExtensionProcessManager : IDisposable
 	{
-		private readonly Logger _logger = new Logger("ext-proc-mgr");
-		public ExtensionProcessManager(string launcherExePath, string extensionsBasePath, bool killOrphanedProcesses = true, TimeSpan monitorInterval = default(TimeSpan))
+		private readonly Logger _logger;
+		public ExtensionProcessManager(Logger logger, string launcherExePath, string extensionsBasePath, bool killOrphanedProcesses = true, TimeSpan monitorInterval = default(TimeSpan))
 		{
 			if(monitorInterval.Ticks <= 0)
 				monitorInterval = new TimeSpan(0, 0, 30);
 
+			_logger = logger;
 			_launcherExePath = launcherExePath;
 			_extensionsBasePath = extensionsBasePath;
 			_monitorInterval = monitorInterval;
@@ -63,33 +63,51 @@ namespace ServerX
 		private CancellationTokenSource _cancelSrc;
 		const int ExtensionStartupSeconds = 5;
 
-		class ProcessInfo
+		public class ExtensionInfo
 		{
 			public Guid ID { get; set; }
-			public Process Process { get; set; }
-			public string[] ExtensionIDs { get; set; }
+			public string[] ActiveExtensionIDs { get; set; }
+			public string[] RequestedExtensionIDs { get; set; }
 			public string DirectoryName { get; set; }
-			public DateTime Timeout { get; set; }
-			public bool RequestRestart { get; set; }
 		}
 
-		private ProcessInfo StartProcess(string dirName, params string[] extensionIDs)
+		class ProcessInfo : ExtensionInfo
 		{
-			if(extensionIDs == null || extensionIDs.Length == 0)
-				using(var loader = new SafeExtensionLoader(_extensionsBasePath, dirName, false, null))
-					extensionIDs = loader.AllExtensions.Select(e => e.ID).ToArray();
+			public Process Process { get; set; }
+			public DateTime Timeout { get; set; }
+			public bool RequestRestart { get; set; }
+			public bool RequestShutdown { get; set; }
+		}
 
+		private ProcessInfo StartProcess(string dirName, params string[] requestedExtensionIDs)
+		{
+			string[] foundExtensionIDs, activeExtensionIDs;
+			try
+			{
+				using(var loader = new SafeExtensionLoader(_extensionsBasePath, dirName, false, null))
+					foundExtensionIDs = loader.AllExtensions.Select(e => e.ID).ToArray();
+			}
+			catch(FileNotFoundException)
+			{
+				_logger.WriteLine("Unable to start extension process - the extension subdirectory \"" + dirName + "\" does not exist or does not contain a valid set of extension assemblies.");
+				return null;
+			}
+			if(requestedExtensionIDs == null || requestedExtensionIDs.Length == 0)
+				activeExtensionIDs = foundExtensionIDs;
+			else
+				activeExtensionIDs = requestedExtensionIDs.Where(e => foundExtensionIDs.Contains(e)).ToArray();
 			var info = new ProcessInfo
 			{
 				ID = Guid.NewGuid(),
 				DirectoryName = dirName,
-				ExtensionIDs = extensionIDs,
+				RequestedExtensionIDs = requestedExtensionIDs,
+				ActiveExtensionIDs = activeExtensionIDs,
 				Timeout = DateTime.UtcNow.Add(_monitorInterval).AddSeconds(ExtensionStartupSeconds) // we add 5 seconds to give the process time to start
 			};
-			_logger.WriteLine("Starting new process for extensions in /" + dirName + " - " + info.ID + " (" + (extensionIDs.Length == 0 ? "all" : extensionIDs.Concat(", ")) + ")");
+			_logger.WriteLine("Starting new process for extensions in /" + dirName + " - " + info.ID + " (" + (activeExtensionIDs.Length == 0 ? "all" : activeExtensionIDs.Concat(", ")) + ")");
 			var cmdargs = string.Format(
 				"-subdir \"{0}\" -basedir \"{1}\" -pid={2} -guid \"{3}\"{4}",
-				dirName, _extensionsBasePath, Process.GetCurrentProcess().Id, info.ID, extensionIDs.Concat(s => " " + s)
+				dirName, _extensionsBasePath, Process.GetCurrentProcess().Id, info.ID, activeExtensionIDs.Concat(s => " " + s)
 			);
 			var psi = new ProcessStartInfo(_launcherExePath, cmdargs)
 			{
@@ -139,11 +157,21 @@ namespace ServerX
 								else if(p.RequestRestart)
 								{
 									p.RequestRestart = false;
-									logger.WriteLine("Restart requested via API for process " + p.ID + " (" + p.DirectoryName + ")");
+									logger.WriteLine("Restart requested for process " + p.ID + " (" + p.DirectoryName + ")");
 									p.Process.Kill();
 									p.Process.WaitForExit();
 									p.Process.Start();
 									logger.WriteLine("Process " + p.ID + " (" + p.DirectoryName + ") restarted successfully");
+								}
+								else if(p.RequestShutdown)
+								{
+									p.RequestRestart = false;
+									logger.WriteLine("Shutdown requested for process " + p.ID + " (" + p.DirectoryName + ")");
+									p.Process.Kill();
+									p.Process.WaitForExit();
+									ProcessInfo pi;
+									processes.TryRemove(p.ID, out pi);
+									logger.WriteLine("Process " + p.ID + " (" + p.DirectoryName + ") shutdown and removed successfully");
 								}
 						}
 					}
@@ -161,13 +189,26 @@ namespace ServerX
 			}
 		}
 
-		public void Execute(string dirName, params string[] extensionIDs)
+		public List<ExtensionInfo> GetExtensionProcessList()
+		{
+			return _processes.Values.Select(p => new ExtensionInfo
+			{
+				ID = p.ID,
+				DirectoryName = p.DirectoryName,
+				ActiveExtensionIDs = p.ActiveExtensionIDs.ToArray(),
+				RequestedExtensionIDs = p.RequestedExtensionIDs.ToArray()
+			}).ToList();
+		}
+
+		public Guid? Execute(string dirName, params string[] extensionIDs)
 		{
 			ProcessInfo info;
 			try
 			{
 				info = StartProcess(dirName, extensionIDs);
-				_processes.AddOrUpdate(info.ID, info, (k,p) =>
+				if(info == null)
+					return null;
+				_processes.AddOrUpdate(info.ID, info, (k, p) =>
 				{
 					lock(p)
 						if(!p.Process.HasExited)
@@ -177,6 +218,7 @@ namespace ServerX
 						}
 					return info;
 				});
+				return info.ID;
 			}
 			catch(Exception ex)
 			{
@@ -186,6 +228,7 @@ namespace ServerX
 					"	=> extensionIDs: " + extensionIDs.Concat(", "),
 					ex
 				);
+				return Guid.Empty;
 			}
 		}
 
@@ -221,7 +264,7 @@ namespace ServerX
 						}
 						catch
 						{
-						
+
 						}
 			_processes.Clear();
 		}
@@ -231,7 +274,7 @@ namespace ServerX
 			int count = 0;
 			foreach(var process in (from p in _processes.Values
 									where (string.IsNullOrWhiteSpace(subdirName) || p.DirectoryName.ToLower() == subdirName.ToLower())
-										&& (extensionIDs == null || extensionIDs.Length == 0 || (p.ExtensionIDs != null && (from e in p.ExtensionIDs
+										&& (extensionIDs == null || extensionIDs.Length == 0 || (p.ActiveExtensionIDs != null && (from e in p.ActiveExtensionIDs
 																															join x in extensionIDs on e equals x
 																															select e).Count() > 0))
 									select p))
@@ -240,6 +283,13 @@ namespace ServerX
 				count++;
 			}
 			return new Result(count > 0, count + " matching extension process(es) were flagged for restart.");
+		}
+
+		public void Stop(Guid id)
+		{
+			ProcessInfo info;
+			if(_processes.TryGetValue(id, out info))
+				info.RequestShutdown = true;
 		}
 	}
 }

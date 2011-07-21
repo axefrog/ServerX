@@ -33,6 +33,6 @@ namespace ServerX.Common
 	public interface IServerExtensionCallback
 	{
 		[OperationContract(IsOneWay = true)]
-		void Notify(string message);
+		void Notify(string source, string message);
 	}
 }

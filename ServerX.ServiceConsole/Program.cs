@@ -62,7 +62,7 @@ namespace ServerX.ServiceConsole
 			//_app.DisplayServerNotificationsChanged += display =>{ if(display) FlushMessageBuffer(); };
 		}
 
-		void OnNotificationReceived(string message)
+		void OnNotificationReceived(string source, string message)
 		{
 			if(_app.DisplayServerNotifications)
 				ColorConsole.WriteLinesLabelled("Service Manager", 15, ConsoleColor.Cyan, message);

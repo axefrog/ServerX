@@ -19,6 +19,9 @@ namespace ServerX.Common
 		private readonly Mutex _mutex;
 		private string _path;
 
+		public delegate void LogNotificationHandler(string message);
+		public event LogNotificationHandler MessageLogged;
+
 		public bool WriteToConsole { get; set; }
 
 		/// <summary>
@@ -79,6 +82,9 @@ namespace ServerX.Common
 		{
 			foreach(var logger in _innerLoggers)
 				logger.Write(o);
+			var eventhandler = MessageLogged;
+			if(eventhandler != null)
+				eventhandler(o.ToString());
 			o = _colorRx.Replace(o.ToString(), "");
 			_mutex.WaitOne();
 			if(!_preventDateSplitting && DateTime.UtcNow.Day != _lastWrite.Day)

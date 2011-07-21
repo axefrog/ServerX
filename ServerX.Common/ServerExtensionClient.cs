@@ -59,11 +59,11 @@ namespace ServerX.Common
 
 		protected override void InitCallback(ServerExtensionCallback callback)
 		{
-			callback.NotificationReceived += msg =>
+			callback.NotificationReceived += (src, msg) =>
 			{
 				var handler = NotificationReceived;
 				if(handler != null)
-					handler(msg);
+					handler(src, msg);
 			};
 		}
 		public event ServiceCallbackBase.NotificationHandler NotificationReceived;

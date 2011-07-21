@@ -84,7 +84,7 @@ namespace ServerX.Common
 	public interface IServiceManagerCallback
 	{
 		[OperationContract(IsOneWay = true)]
-		void ServiceManagerNotify(string message);
+		void ServiceManagerNotify(string source, string message);
 
 		[OperationContract(IsOneWay = true)]
 		void ServerExtensionNotify(string extID, string extName, string message);

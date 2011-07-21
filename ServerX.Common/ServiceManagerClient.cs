@@ -25,11 +25,11 @@ namespace ServerX.Common
 
 		protected override void InitCallback(ServiceManagerCallback callback)
 		{
-			callback.NotificationReceived += msg =>
+			callback.NotificationReceived += (src, msg) =>
 			{
 				var handler = NotificationReceived;
 				if(handler != null)
-					handler(msg);
+					handler(src, msg);
 			};
 			callback.ExtensionNotificationReceived += (extID, extName, msg) =>
 			{
@@ -170,14 +170,14 @@ namespace ServerX.Common
 		public delegate void ExtensionNotificationHandler(string extID, string extName, string message);
 		public event ExtensionNotificationHandler ExtensionNotificationReceived;
 
-		public void ServiceManagerNotify(string message)
+		public void ServiceManagerNotify(string source, string message)
 		{
 			var handler = NotificationReceived;
 			if(handler != null)
-				handler(message);
+				handler(source, message);
 		}
 
-		public delegate void NotificationHandler(string message);
+		public delegate void NotificationHandler(string source, string message);
 		public event NotificationHandler NotificationReceived;
 	}
 }

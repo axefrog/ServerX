@@ -43,7 +43,7 @@ namespace ServerX
 				ClientInfo temp;
 				_clients.TryRemove(info.ID, out temp);
 			};
-			client.NotificationReceived += msg =>
+			client.NotificationReceived += (src, msg) =>
 			{
 				var handler = ExtensionNotificationReceived;
 				if(handler != null)

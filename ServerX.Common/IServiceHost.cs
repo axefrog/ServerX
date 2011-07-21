@@ -17,14 +17,14 @@ namespace ServerX.Common
 
 	public abstract class ServiceCallbackBase
 	{
-		public virtual void Notify(string message)
+		public virtual void Notify(string source, string message)
 		{
 			var handler = NotificationReceived;
 			if(handler != null)
-				handler(message);
+				handler(source, message);
 		}
 
-		public delegate void NotificationHandler(string message);
+		public delegate void NotificationHandler(string source, string message);
 		public event NotificationHandler NotificationReceived;
 	}
 }
