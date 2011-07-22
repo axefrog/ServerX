@@ -66,7 +66,7 @@
     <Compile Include="Command.cs" />
     <Compile Include="CommandResponse.cs" />
     <Compile Include="ClientBase.cs" />
-    <Compile Include="IServiceHost.cs" />
+    <Compile Include="IServiceXBase.cs" />
     <Compile Include="JavaScriptInterface.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Mono.Options.cs" />

@@ -13,13 +13,13 @@ namespace ServerX
 	{
 		ConcurrentDictionary<string, ClientInfo> _clients = new ConcurrentDictionary<string, ClientInfo>();
 
-		private class ClientInfo : ExtensionInfo
+		internal class ClientInfo : ExtensionInfo
 		{
 			[IgnoreDataMember]
 			public ServerExtensionClient Client { get; set; }
 		}
 
-		public bool TryConnect(string address)
+		public ClientInfo TryConnect(string address)
 		{
 			var info = new ClientInfo();
 			ServerExtensionClient client;
@@ -36,7 +36,7 @@ namespace ServerX
 			}
 			catch
 			{
-				return false;
+				return null;
 			}
 			client.Disconnected += c =>
 			{
@@ -66,11 +66,11 @@ namespace ServerX
 				if(cmdid == info.CommandID)
 				{
 					client.Close();
-					return false;
+					return null;
 				}
 			}
 
-			return _clients.TryAdd(info.CommandID, info);
+			return _clients.TryAdd(info.CommandID, info) ? info : null;
 		}
 
 		public string ExecuteCommand(string cmdID, string[] args)

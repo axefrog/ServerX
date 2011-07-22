@@ -25,8 +25,8 @@ namespace ServerX.Service
 
 				AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
 				TaskScheduler.UnobservedTaskException += OnTaskSchedulerUnobservedTaskException;
-				_serviceHost = new ServiceHost(typeof(ServiceManagerHost));
-				_serviceHost.AddServiceEndpoint(typeof(IServiceManagerHost), new NetTcpBinding("Default"), "net.tcp://localhost:" + prms.Port + "/ServiceManagerHost");
+				_serviceHost = new ServiceHost(typeof(ServiceManager));
+				_serviceHost.AddServiceEndpoint(typeof(IServiceManager), new NetTcpBinding("Default"), "net.tcp://localhost:" + prms.Port + "/ServiceManager");
 				_serviceHost.Opening += OnServiceHostOpening;
 				_serviceHost.Opened += OnServiceHostOpened;
 				_serviceHost.Faulted += OnServiceHostFaulted;

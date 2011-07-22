@@ -2,12 +2,14 @@
 using System.Configuration;
 using System.IO;
 using System.Linq;
+using System.ServiceModel;
 using System.Text.RegularExpressions;
 using ServerX.Common;
 
 namespace ServerX
 {
-	public class ServiceManager : IServiceManager
+	[ServiceBehavior(ConcurrencyMode = ConcurrencyMode.Multiple, InstanceContextMode = InstanceContextMode.Single, UseSynchronizationContext = true, IncludeExceptionDetailInFaults = true)]
+	public class ServiceManager : ServiceXBase, IServiceManager
 	{
 		private DirectoryInfo _extensionsBaseDir;
 		private readonly string[] _extensionFileExtensions = new[] { "dll", "exe" };
@@ -19,6 +21,9 @@ namespace ServerX
 
 		public ServiceManager()
 		{
+			ExtensionNotificationReceived += (extID, extName, source, message) => CallbackEachClient<IServiceManagerCallback>(c => c.ServerExtensionNotify(extID, extName, source, message));
+			ServiceManagerNotificationReceived += (source, message) => CallbackEachClient<IServiceManagerCallback>(c => c.Notify(source, message));
+
 			_extensionsBaseDir = new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extensions"));
 			if(!_extensionsBaseDir.Exists)
 				_extensionsBaseDir.Create();
@@ -34,7 +39,7 @@ namespace ServerX
 			};
 
 			var extProcLog = new Logger("ext-proc-mgr");
-			extProcLog.MessageLogged += msg => Notify("Extension Manager", msg);
+			extProcLog.MessageLogged += (src, msg) => Notify("Extension Manager", msg);
 
 			_extProcMgr = new ExtensionProcessManager(
 				extProcLog,
@@ -45,7 +50,7 @@ namespace ServerX
 
 			_cmdRunner = new CommandRunner(this, _extClientMgr);
 			var cronLog = new Logger("cron");
-			cronLog.MessageLogged += msg => Notify("Cron Manager", msg);
+			cronLog.MessageLogged += (src, msg) => Notify("Cron Manager", msg);
 			_cronMgr = new CronManager(this, cronLog);
 		}
 
@@ -179,7 +184,9 @@ namespace ServerX
 
 		public void NotifyExtensionServiceReady(string address)
 		{
-			_extClientMgr.TryConnect(address);
+			var info = _extClientMgr.TryConnect(address);
+			if(info != null)
+				Notify(info.Name, "Extension connected and ready.");
 		}
 
 		public virtual void Dispose()

@@ -3,7 +3,7 @@ using System.ServiceModel;
 
 namespace ServerX.Common
 {
-	public sealed class ServiceManagerClient : ClientBase<ServiceManagerClient, IServiceManagerHost, ServiceManagerCallback>, IServiceManagerHost
+	public sealed class ServiceManagerClient : ClientBase<ServiceManagerClient, IServiceManager, ServiceManagerCallback>, IServiceManager
 	{
 		public ServiceManagerClient()
 		{
@@ -15,7 +15,7 @@ namespace ServerX.Common
 		}
 
 		private ServiceManagerClient(string address, int port, ServiceManagerCallback callback)
-			: base(callback, new NetTcpBinding("Default"), new EndpointAddress("net.tcp://" + address + ":" + port + "/ServiceManagerHost"))
+			: base(callback, new NetTcpBinding("Default"), new EndpointAddress("net.tcp://" + address + ":" + port + "/ServiceManager"))
 		{
 		}
 
@@ -170,7 +170,7 @@ namespace ServerX.Common
 		public delegate void ExtensionNotificationHandler(string extID, string extName, string source, string message);
 		public event ExtensionNotificationHandler ExtensionNotificationReceived;
 
-		public void ServiceManagerNotify(string source, string message)
+		public void Notify(string source, string message)
 		{
 			var handler = NotificationReceived;
 			if(handler != null)

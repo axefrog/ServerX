@@ -3,7 +3,7 @@ using System.ServiceModel;
 
 namespace ServerX.Common
 {
-	public class ServerExtensionClient : ClientBase<ServerExtensionClient, IServerExtensionHost, ServerExtensionCallback>, IServerExtensionHost
+	public class ServerExtensionClient : ClientBase<ServerExtensionClient, IServerExtension, ServerExtensionCallback>, IServerExtension
 	{
 		public ServerExtensionClient(string tcpAddress)
 			: base(new ServerExtensionCallback(), new NetTcpBinding("Default"), new EndpointAddress(tcpAddress))

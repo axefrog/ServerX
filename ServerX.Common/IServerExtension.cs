@@ -3,8 +3,8 @@ using System.ServiceModel;
 
 namespace ServerX.Common
 {
-	[ServiceContract]
-	public interface IServerExtension
+	[ServiceContract(CallbackContract = typeof(IServerExtensionCallback), SessionMode = SessionMode.Allowed)]
+	public interface IServerExtension : IServiceXBase
 	{
 		string ID { [OperationContract] get; }
 		string CommandID { [OperationContract] get; }
@@ -25,14 +25,7 @@ namespace ServerX.Common
 		void Debug();
 	}
 
-	[ServiceContract(CallbackContract = typeof(IServerExtensionCallback), SessionMode = SessionMode.Allowed)]
-	public interface IServerExtensionHost : IServiceHost, IServerExtension
+	public interface IServerExtensionCallback : IServiceCallbackBase
 	{
-	}
-
-	public interface IServerExtensionCallback
-	{
-		[OperationContract(IsOneWay = true)]
-		void Notify(string source, string message);
 	}
 }

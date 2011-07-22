@@ -71,7 +71,7 @@ namespace ServerX.Common
 				}
 			}
 			_infos = list.ToArray();
-			_logger.WriteLine("[MAIN] Obtained info for " + _infos.Length + " available extensions");
+			_logger.WriteLine("Extensions Activator", "Obtained info for " + _infos.Length + " available extensions");
 		}
 
 		public ExtensionInfo[] Extensions
@@ -96,7 +96,7 @@ namespace ServerX.Common
 			if(ids.Length == 0)
 				ids = _infos.Select(i => i.ID).ToArray();
 			_logger.WriteLines(
-				"[MAIN] Starting extensions:",
+				"Extensions Activator", "Starting extensions:",
 				"	=> " + string.Join(", ", ids),
 				"	=> process monitor ID: " + guid
 			);
@@ -138,12 +138,12 @@ namespace ServerX.Common
 					ServiceManagerClient client = null;
 					if(guid != Guid.Empty)
 					{
-						_logger.WriteLine("[MONITOR] Connecting to Service Manager...");
+						_logger.WriteLine("Monitor", "Connecting to Service Manager...");
 						client = new ServiceManagerClient("ServiceManagerClient");
 						client.Disconnected += c =>
 						{
-							_logger.WriteLine("[MONITOR/CLIENT] Client state changed to: " + c.State);
-							_logger.WriteLine("[MONITOR/CLIENT] Disconnected from service manager. Execution on all extensions will be cancelled now to allow the process to shut down.");
+							_logger.WriteLine("Monitor/Client", "Client state changed to: " + c.State);
+							_logger.WriteLine("Monitor/Client", "Disconnected from service manager. Execution on all extensions will be cancelled now to allow the process to shut down.");
 							_cancelSource.Cancel(); // process manager will take care of restarting this process
 						};
 						foreach(var ext in _runningExtensions.Values)
@@ -151,19 +151,19 @@ namespace ServerX.Common
 							// Don't notify the server until Run has been called, otherwise the extension's Logger won't be available
 							while(!ext.Extension.RunCalled)
 								Thread.Sleep(250);
-							_logger.WriteLine("[MONITOR] Sending extension connection address: " + ext.Address);
+							_logger.WriteLine("Monitor", "Sending extension connection address: " + ext.Address);
 							client.NotifyExtensionServiceReady(ext.Address);
 						}
-						_logger.WriteLine("[MONITOR] Connected.");
+						_logger.WriteLine("Monitor", "Connected.");
 					}
 
-					_logger.WriteLine("[MONITOR] " + _runningExtensions.Count + " extensions now running.");
+					_logger.WriteLine("Monitor", "" + _runningExtensions.Count + " extensions now running.");
 					while(!_cancelSource.IsCancellationRequested)
 					{
 						foreach(var ext in _runningExtensions.Values)
 							if(!ext.Extension.IsRunning || ext.Task.IsCompleted || ext.Task.IsFaulted)
 							{
-								_logger.WriteLine("[MONITOR] Extension {" + ext.Extension.Name + "} is no longer running. Execution on all extensions will be cancelled now to allow the process to restart.");
+								_logger.WriteLine("Monitor", "Extension {" + ext.Extension.Name + "} is no longer running. Execution on all extensions will be cancelled now to allow the process to restart.");
 								_cancelSource.Cancel();
 							}
 						if(client != null)
@@ -175,15 +175,15 @@ namespace ServerX.Common
 				}
 				catch(ThreadAbortException)
 				{
-					_logger.WriteLine("[MONITOR] Extension state monitoring terminating.");
+					_logger.WriteLine("Monitor", "Extension state monitoring terminating.");
 				}
 				catch(Exception ex)
 				{
-					_logger.WriteLines("[MONITOR] EXTENSION MONITORING TASK EXCEPTION:", ex);
+					_logger.WriteLines("Monitor", "EXTENSION MONITORING TASK EXCEPTION:", ex);
 				}
 			}, _cancelSource.Token, atp, TaskScheduler.Current);
 
-			_logger.WriteLine("[MAIN] Waiting on task threads to finish...");
+			_logger.WriteLine("Extensions Activator", "Waiting on task threads to finish...");
 			try
 			{
 				task.Wait(_cancelSource.Token);
@@ -191,7 +191,7 @@ namespace ServerX.Common
 			catch(OperationCanceledException)
 			{
 			}
-			_logger.WriteLine("[MAIN] Task threads have all ended.");
+			_logger.WriteLine("Extensions Activator", "Task threads have all ended.");
 		}
 
 		/// <summary>

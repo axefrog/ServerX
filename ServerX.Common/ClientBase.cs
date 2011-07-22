@@ -5,9 +5,9 @@ using System.Timers;
 
 namespace ServerX.Common
 {
-	public abstract class ClientBase<TClient, TChannel, TCallback> : DuplexClientBase<TChannel>, IServiceHost
+	public abstract class ClientBase<TClient, TChannel, TCallback> : DuplexClientBase<TChannel>, IServiceXBase
 		where TClient : ClientBase<TClient, TChannel, TCallback>
-		where TChannel : class, IServiceHost
+		where TChannel : class, IServiceXBase
 		where TCallback : class, new()
 	{
 		private Guid? _id;
@@ -97,7 +97,7 @@ namespace ServerX.Common
 		}
 
 		public event ClientDisconnectedHandler<TClient, TChannel, TCallback> Disconnected;
-		void IServiceHost.RegisterClient(Guid id)
+		void IServiceXBase.RegisterClient(Guid id)
 		{
 			ClientID = id;
 			Channel.RegisterClient(id);
@@ -105,7 +105,7 @@ namespace ServerX.Common
 
 		public void RegisterClient()
 		{
-			((IServiceHost)this).RegisterClient(Guid.NewGuid());
+			((IServiceXBase)this).RegisterClient(Guid.NewGuid());
 		}
 
 		public void KeepAlive()
@@ -138,6 +138,6 @@ namespace ServerX.Common
 
 	public delegate void ClientDisconnectedHandler<TClient, TChannel, TCallback>(TClient client)
 		where TClient : ClientBase<TClient, TChannel, TCallback>
-		where TChannel : class, IServiceHost
+		where TChannel : class, IServiceXBase
 		where TCallback : class, new();
 }

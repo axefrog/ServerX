@@ -19,7 +19,7 @@ namespace ServerX.Common
 		private readonly Mutex _mutex;
 		private string _path;
 
-		public delegate void LogNotificationHandler(string message);
+		public delegate void LogNotificationHandler(string source, string message);
 		public event LogNotificationHandler MessageLogged;
 
 		public bool WriteToConsole { get; set; }
@@ -78,19 +78,24 @@ namespace ServerX.Common
 
 		static Regex _colorRx = new Regex(@"(\%[\*\@\!\?\~\>\#])");
 		DateTime _lastWrite = DateTime.MinValue;
-		public void Write(object o)
+		public void Write(object o, string source = null)
 		{
 			foreach(var logger in _innerLoggers)
 				logger.Write(o);
-			var eventhandler = MessageLogged;
-			if(eventhandler != null)
-				eventhandler(o.ToString());
+			if(MessageLogged != null)
+			{
+				var eventhandler = MessageLogged;
+				if(eventhandler != null)
+					eventhandler(source, o.ToString());
+			}
 			o = _colorRx.Replace(o.ToString(), "");
 			_mutex.WaitOne();
 			if(!_preventDateSplitting && DateTime.UtcNow.Day != _lastWrite.Day)
 				UpdatePath();
 			try
 			{
+				if(!string.IsNullOrWhiteSpace(source))
+					o = string.Concat("[", source, "] ", o);
 				if(DateTime.UtcNow > _lastWrite.AddMinutes(5))
 					o = "-------------- " + DateTime.UtcNow + " --------------\r\n" + o;
 				if(WriteToConsole)
@@ -106,6 +111,10 @@ namespace ServerX.Common
 		public void WriteLine(object o)
 		{
 			Write(o + Environment.NewLine);
+		}
+		public void WriteLine(string source, object o)
+		{
+			Write(o + Environment.NewLine, source);
 		}
 		public void WriteLines(params object[] o)
 		{

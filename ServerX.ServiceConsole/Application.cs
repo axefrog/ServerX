@@ -141,8 +141,8 @@ namespace ServerX.ServiceConsole
 				return WindowsServiceInstaller.Install(false, new string[0]);
 			}
 
-			var host = new ServiceHost(typeof(ServiceManagerHost));
-			host.AddServiceEndpoint(typeof(IServiceManagerHost), new NetTcpBinding("Default"), "net.tcp://localhost:" + port + "/ServiceManagerHost");
+			var host = new ServiceHost(typeof(ServiceManager));
+			host.AddServiceEndpoint(typeof(IServiceManager), new NetTcpBinding("Default"), "net.tcp://localhost:" + port + "/ServiceManager");
 			try
 			{
 				host.Open();

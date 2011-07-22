@@ -4,7 +4,7 @@ using System.ServiceModel;
 namespace ServerX.Common
 {
 	[ServiceContract(Name = "ServiceManager", Namespace = "http://ServerX/ServiceManager", CallbackContract = typeof(IServiceManagerCallback), SessionMode = SessionMode.Allowed)]
-	public interface IServiceManager : IDisposable
+	public interface IServiceManager : IServiceXBase, IDisposable
 	{
 		[OperationContract]
 		DateTime GetServerTime();
@@ -76,16 +76,13 @@ namespace ServerX.Common
 		void NotifyExtensionServiceReady(string address);
 	}
 
-	[ServiceContract(Name = "ServiceManager", Namespace = "http://ServerX/ServiceManager", CallbackContract = typeof(IServiceManagerCallback), SessionMode = SessionMode.Allowed)]
-	public interface IServiceManagerHost : IServiceManager, IServiceHost
-	{
-	}
+	//[ServiceContract(Name = "ServiceManager", Namespace = "http://ServerX/ServiceManager", CallbackContract = typeof(IServiceManagerCallback), SessionMode = SessionMode.Allowed)]
+	//public interface IServiceManagerHost : IServiceManager, IServiceXBase
+	//{
+	//}
 
-	public interface IServiceManagerCallback
+	public interface IServiceManagerCallback : IServiceCallbackBase
 	{
-		[OperationContract(IsOneWay = true)]
-		void ServiceManagerNotify(string source, string message);
-
 		[OperationContract(IsOneWay = true)]
 		void ServerExtensionNotify(string extID, string extName, string source, string message);
 	}
