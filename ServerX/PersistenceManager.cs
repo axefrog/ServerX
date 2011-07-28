@@ -109,6 +109,11 @@ namespace ServerX
 			}
 		}
 
+		/// <summary>
+		/// Provides a simple mechanism to safely lock and update the values of the settings object. Disposal saves the values
+		/// and unlocks the settings object. This method is desiged to be used from within a "using" block.
+		/// </summary>
+		/// <returns>A context object which saves and unlocks the settings object upon disposal</returns>
 		public SettingsUpdate BeginUpdate()
 		{
 			return new SettingsUpdate(this);

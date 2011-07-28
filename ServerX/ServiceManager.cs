@@ -15,7 +15,7 @@ namespace ServerX
 		private readonly string[] _extensionFileExtensions = new[] { "dll", "exe" };
 		private ExtensionProcessManager _extProcMgr;
 		private ExtensionsConfigFileManager _extCfgMgr;
-		private ServerExtensionClientManager _extClientMgr = new ServerExtensionClientManager();
+		private ServerExtensionClientManager _extClientMgr;
 		private CommandRunner _cmdRunner;
 		private CronManager _cronMgr;
 
@@ -30,6 +30,8 @@ namespace ServerX
 			if(_extensionsBaseDir.GetFiles().Select(f => f.Extension.ToLower()).Any(ext => _extensionFileExtensions.Contains(ext)))
 				throw new Exception("The extensions directory currently contains assemblies and/or executables. Extensions should be located in subdirectories of the Extensions folder; not the Extensions directory itself.");
 
+			var extProcLog = new Logger("ext-proc-mgr");
+			_extClientMgr = new ServerExtensionClientManager(extProcLog);
 			_extClientMgr.ExtensionNotificationReceived += (extID, extName, source, message) =>
 			{
 				
@@ -38,7 +40,6 @@ namespace ServerX
 					handler(extID, extName, source, message);
 			};
 
-			var extProcLog = new Logger("ext-proc-mgr");
 			extProcLog.MessageLogged += (src, msg) => Notify("Extension Manager", msg);
 
 			_extProcMgr = new ExtensionProcessManager(
