@@ -72,6 +72,9 @@ namespace ServerX.ExtensionRunner
 					"	=> Parent Process ID: " + (process == null ? "(none)" : process.Id.ToString())
 				);
 
+				AppDomain.CurrentDomain.UnhandledException += (s,e) => logger.Write("UNTRAPPED SERVICE EXCEPTION:\r\n" + e.ExceptionObject);
+				TaskScheduler.UnobservedTaskException += (s,e) => logger.Write("UNTRAPPED TASK EXCEPTION:\r\n" + e.Exception);
+
 				if(process != null)
 				{
 					Task.Factory.StartNew(() =>

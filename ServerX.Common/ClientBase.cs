@@ -112,7 +112,7 @@ namespace ServerX.Common
 		{
 			try
 			{
-				if(State == CommunicationState.Opened)
+				if(State == CommunicationState.Opened || State == CommunicationState.Created)
 					try
 					{
 						Channel.KeepAlive();

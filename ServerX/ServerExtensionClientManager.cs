@@ -11,7 +11,13 @@ namespace ServerX
 {
 	internal class ServerExtensionClientManager
 	{
+		private readonly Logger _logger;
 		ConcurrentDictionary<string, ClientInfo> _clients = new ConcurrentDictionary<string, ClientInfo>();
+
+		public ServerExtensionClientManager(Logger logger)
+		{
+			_logger = logger;
+		}
 
 		internal class ClientInfo : ExtensionInfo
 		{
@@ -33,15 +39,18 @@ namespace ServerX
 				info.Description = client.Description;
 				info.SupportsCommandLine = client.SupportsCommandLine;
 				info.Client = client;
+				_logger.WriteLine("Extension Client Manager", "Connected to extension: " + info.Name);
 			}
-			catch
+			catch(Exception ex)
 			{
+				_logger.WriteLine("Extension Client Manager", "Exception thrown while trying to connect to extension \"" + info.Name + "\":" + Environment.NewLine + ex);
 				return null;
 			}
 			client.Disconnected += c =>
 			{
 				ClientInfo temp;
 				_clients.TryRemove(info.ID, out temp);
+				_logger.WriteLine("Extension Client Manager", "Lost connection to extension: " + (temp == null ? "(Unknown)" : temp.Name));
 			};
 			client.NotificationReceived += (src, msg) =>
 			{
