@@ -9,13 +9,15 @@ using ServerX.Common;
 
 namespace ServerX
 {
-	internal class ServerExtensionClientManager
+	internal class ExtensionClientManager
 	{
+		private readonly ExtensionProcessManager _extProcMgr;
 		private readonly Logger _logger;
 		ConcurrentDictionary<string, ClientInfo> _clients = new ConcurrentDictionary<string, ClientInfo>();
 
-		public ServerExtensionClientManager(Logger logger)
+		public ExtensionClientManager(ExtensionProcessManager extProcMgr, Logger logger)
 		{
+			_extProcMgr = extProcMgr;
 			_logger = logger;
 		}
 
@@ -23,9 +25,11 @@ namespace ServerX
 		{
 			[IgnoreDataMember]
 			public ServerExtensionClient Client { get; set; }
+
+			public Guid ExtProcID { get; set; }
 		}
 
-		public ClientInfo TryConnect(string address)
+		public ClientInfo TryConnect(Guid extProcID, string address)
 		{
 			var info = new ClientInfo();
 			ServerExtensionClient client;
@@ -34,6 +38,7 @@ namespace ServerX
 				client = new ServerExtensionClient(address);
 				client.RegisterClient();
 				info.ID = client.ID;
+				info.ExtProcID = extProcID;
 				info.CommandID = Regex.Replace(client.CommandID ?? "", @"\s+", "").ToLower();
 				info.Name = client.Name;
 				info.Description = client.Description;
@@ -86,7 +91,26 @@ namespace ServerX
 		{
 			ClientInfo info;
 			if(_clients.TryGetValue((cmdID ?? "").ToLower(), out info))
-				return info.Client.Command(args);
+			{
+				try
+				{
+					return info.Client.Command(args);
+				}
+				catch(CommunicationObjectFaultedException)
+				{
+					_extProcMgr.RestartExtension(info.ExtProcID);
+					var msg = "command " + info.CommandID + " failed - the connection to the extension has broken. The extension will be restarted. Check the logs for fault exception details.";
+					_logger.WriteLine("Extension Client Manager", msg);
+					return "%!" + msg;
+				}
+				catch(Exception ex)
+				{
+					_extProcMgr.RestartExtension(info.ExtProcID);
+					var msg = "command " + info.CommandID + " failed - An exception was thrown. The extension will be restarted. Exception details: " + ex;
+					_logger.WriteLine("Extension Client Manager", msg);
+					return "%!" + msg;
+				}
+			}
 			return "%!command %@" + cmdID + "%@ is no longer available.";
 		}
 

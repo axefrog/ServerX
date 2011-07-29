@@ -20,7 +20,7 @@ namespace ServerX.ServiceConsole
 		private bool _displayServerNotifications;
 
 		readonly Regex _rxSplitCommand = new Regex(@"((""((?<match>.*?)(?<!\\)"")|(?<match>[\w\S]+))(\s)*)", RegexOptions.ExplicitCapture);
-		readonly Regex _fastRun = new Regex(@"^\![A-Za-z0-9\-_]+$");
+		readonly Regex _execMacro = new Regex(@"^\![A-Za-z0-9\-_]+$");
 		readonly private Dictionary<string, ConsoleCommand> _commandsByAlias = new Dictionary<string, ConsoleCommand>();
 		readonly private Dictionary<string, ConsoleCommand> _commandsByTitle = new Dictionary<string, ConsoleCommand>();
 		
@@ -177,6 +177,16 @@ namespace ServerX.ServiceConsole
 		    if(string.IsNullOrWhiteSpace(cmd))
 		        return;
 			cmd = cmd.ToLower();
+			var macroMatch = _execMacro.Match(cmd);
+			if(macroMatch.Success)
+			{
+				var macro = _settings.Values.Macros.FirstOrDefault(m => m.Name == macroMatch.Value.Substring(1));
+				if(macro != null)
+				{
+					Execute(macro.Command);
+					return;
+				}
+			}
 
 			ConsoleCommand cc;
 			if(!_commandsByAlias.TryGetValue(cmd, out cc))

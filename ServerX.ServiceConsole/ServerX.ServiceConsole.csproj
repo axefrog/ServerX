@@ -89,10 +89,6 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Server\Server.Core\Server.Core.csproj">
-      <Project>{BBDBF74B-FA02-41BB-999A-461E7A311368}</Project>
-      <Name>Server.Core</Name>
-    </ProjectReference>
     <ProjectReference Include="..\ServerX.Common\ServerX.Common.csproj">
       <Project>{9237CC64-970E-48B7-BC2B-5B8EAA304766}</Project>
       <Name>ServerX.Common</Name>

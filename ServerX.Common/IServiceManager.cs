@@ -73,7 +73,7 @@ namespace ServerX.Common
 		void KeepExtensionProcessAlive(Guid id);
 
 		[OperationContract]
-		void NotifyExtensionServiceReady(string address);
+		void NotifyExtensionServiceReady(Guid extProcID, string address);
 	}
 
 	//[ServiceContract(Name = "ServiceManager", Namespace = "http://ServerX/ServiceManager", CallbackContract = typeof(IServiceManagerCallback), SessionMode = SessionMode.Allowed)]

@@ -84,7 +84,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="ServerExtensionClientManager.cs" />
+    <Compile Include="ExtensionClientManager.cs" />
     <Compile Include="ServiceManagerCommand.cs" />
     <Compile Include="ServiceManagerCommands\ExecCommand.cs" />
     <Compile Include="ServiceManagerCommands\RestartCommand.cs" />

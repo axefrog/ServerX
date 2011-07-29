@@ -15,11 +15,11 @@ namespace ServerX
 	internal class ScriptRunner
 	{
 		private readonly ServiceManager _svc;
-		private readonly ServerExtensionClientManager _clientManager;
+		private readonly ExtensionClientManager _clientManager;
 		string _preScript;
 		JintEngine _engine = new JintEngine();
 
-		public ScriptRunner(ServiceManager svc, ServerExtensionClientManager clientManager)
+		public ScriptRunner(ServiceManager svc, ExtensionClientManager clientManager)
 		{
 			_svc = svc;
 			_clientManager = clientManager;

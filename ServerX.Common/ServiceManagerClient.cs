@@ -152,9 +152,9 @@ namespace ServerX.Common
 			Channel.KeepExtensionProcessAlive(id);
 		}
 
-		public void NotifyExtensionServiceReady(string address)
+		public void NotifyExtensionServiceReady(Guid extProcID, string address)
 		{
-			Channel.NotifyExtensionServiceReady(address);
+			Channel.NotifyExtensionServiceReady(extProcID, address);
 		}
 	}
 

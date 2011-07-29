@@ -27,12 +27,10 @@ namespace ServerX
 				foreach(var process in Process.GetProcessesByName(Path.GetFileNameWithoutExtension(launcherExePath)))
 					if(process.StartInfo.WorkingDirectory.StartsWith(_extensionsBasePath)) // only kill extension processes that are running from this base location
 						process.Kill();
-
-			StartMonitoring();
 		}
 
 		private List<KeyValuePair<DateTime, Exception>> _previousExceptions = new List<KeyValuePair<DateTime, Exception>>();
-		private void StartMonitoring()
+		internal void StartMonitoring()
 		{
 			_cancelSrc = new CancellationTokenSource();
 			Task.Factory.StartNew(() => MonitorProcesses(_cancelSrc.Token, _monitorInterval, _processes, _logger))
@@ -140,6 +138,7 @@ namespace ServerX
 						if(processes.TryGetValue(key, out p))
 						{
 							lock(p)
+							{
 								if(p.Process.HasExited)
 								{
 									var exitCode = p.Process.ExitCode;
@@ -173,6 +172,7 @@ namespace ServerX
 									processes.TryRemove(p.ID, out pi);
 									logger.WriteLine("Process " + p.ID + " (" + p.DirectoryName + ") shutdown and removed successfully");
 								}
+							}
 						}
 					}
 				}
@@ -283,6 +283,21 @@ namespace ServerX
 				count++;
 			}
 			return new Result(count > 0, count + " matching extension process(es) were flagged for restart.");
+		}
+
+		public Result RestartExtension(Guid id)
+		{
+			ProcessInfo proc;
+			if(!_processes.TryGetValue(id, out proc))
+				return Result.Failed("No extension was found with the ID: " + id);
+			proc.RequestRestart = true;
+			return Result.Succeeded;
+		}
+
+		public bool IsValidID(Guid id)
+		{
+			ProcessInfo proc;
+			return _processes.TryGetValue(id, out proc);
 		}
 
 		public void Stop(Guid id)

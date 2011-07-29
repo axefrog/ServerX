@@ -10,11 +10,11 @@ namespace ServerX
 	internal class CommandRunner
 	{
 		private readonly ServiceManager _svc;
-		private readonly ServerExtensionClientManager _extmgr;
+		private readonly ExtensionClientManager _extmgr;
 		private readonly Dictionary<string, ServiceManagerCommand> _commandsByAlias = new Dictionary<string, ServiceManagerCommand>();
 		private readonly List<ServiceManagerCommand> _commands = new List<ServiceManagerCommand>();
 
-		public CommandRunner(ServiceManager svc, ServerExtensionClientManager extmgr)
+		public CommandRunner(ServiceManager svc, ExtensionClientManager extmgr)
 		{
 			_svc = svc;
 			_extmgr = extmgr;

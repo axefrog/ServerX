@@ -15,7 +15,7 @@ namespace ServerX
 		private readonly string[] _extensionFileExtensions = new[] { "dll", "exe" };
 		private ExtensionProcessManager _extProcMgr;
 		private ExtensionsConfigFileManager _extCfgMgr;
-		private ServerExtensionClientManager _extClientMgr;
+		private ExtensionClientManager _extClientMgr;
 		private CommandRunner _cmdRunner;
 		private CronManager _cronMgr;
 
@@ -31,22 +31,23 @@ namespace ServerX
 				throw new Exception("The extensions directory currently contains assemblies and/or executables. Extensions should be located in subdirectories of the Extensions folder; not the Extensions directory itself.");
 
 			var extProcLog = new Logger("ext-proc-mgr");
-			_extClientMgr = new ServerExtensionClientManager(extProcLog);
+			_extProcMgr = new ExtensionProcessManager(
+				extProcLog,
+				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServerX.Run.exe"),
+				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extensions")
+			);
+
+			_extClientMgr = new ExtensionClientManager(_extProcMgr, extProcLog);
 			_extClientMgr.ExtensionNotificationReceived += (extID, extName, source, message) =>
 			{
-				
 				var handler = ExtensionNotificationReceived;
 				if(handler != null)
 					handler(extID, extName, source, message);
 			};
 
 			extProcLog.MessageLogged += (src, msg) => Notify("Extension Manager", msg);
+			_extProcMgr.StartMonitoring();
 
-			_extProcMgr = new ExtensionProcessManager(
-				extProcLog,
-				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServerX.Run.exe"),
-				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extensions")
-			);
 			_extCfgMgr = new ExtensionsConfigFileManager(extProcLog, _extProcMgr);
 
 			_cmdRunner = new CommandRunner(this, _extClientMgr);
@@ -183,11 +184,14 @@ namespace ServerX
 			_extProcMgr.KeepAlive(id);
 		}
 
-		public void NotifyExtensionServiceReady(string address)
+		public void NotifyExtensionServiceReady(Guid extProcID, string address)
 		{
-			var info = _extClientMgr.TryConnect(address);
-			if(info != null)
-				Notify(info.Name, "Extension connected and ready.");
+			if(_extProcMgr.IsValidID(extProcID))
+			{
+				var info = _extClientMgr.TryConnect(extProcID, address);
+				if(info != null)
+					Notify(info.Name, "Extension connected and ready.");
+			}
 		}
 
 		public virtual void Dispose()

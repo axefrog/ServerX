@@ -152,20 +152,29 @@ namespace ServerX.Common
 							while(!ext.Extension.RunCalled)
 								Thread.Sleep(250);
 							_logger.WriteLine("Monitor", "Sending extension connection address: " + ext.Address);
-							client.NotifyExtensionServiceReady(ext.Address);
+							client.NotifyExtensionServiceReady(guid, ext.Address);
 						}
 						_logger.WriteLine("Monitor", "Connected.");
 					}
 
 					_logger.WriteLine("Monitor", "" + _runningExtensions.Count + " extensions now running.");
+					var exitMsg = " Execution on all extensions will be cancelled now to allow the process to restart.";
 					while(!_cancelSource.IsCancellationRequested)
 					{
 						foreach(var ext in _runningExtensions.Values)
-							if(!ext.Extension.IsRunning || ext.Task.IsCompleted || ext.Task.IsFaulted)
+						{
+							if(!ext.Extension.IsRunning)
+								_logger.WriteLine("Monitor", "Extension {" + ext.Extension.Name + "} IsRunning == false." + exitMsg);
+							if(ext.Task.IsCompleted)
+								_logger.WriteLine("Monitor", "Extension {" + ext.Extension.Name + "} Task.IsCompleted == true." + exitMsg);
+							if(ext.Task.IsFaulted)
 							{
-								_logger.WriteLine("Monitor", "Extension {" + ext.Extension.Name + "} is no longer running. Execution on all extensions will be cancelled now to allow the process to restart.");
-								_cancelSource.Cancel();
+								_logger.WriteLine("Monitor", "Extension {" + ext.Extension.Name + "} Task.IsFaulted == true." + exitMsg);
+								_logger.WriteLine("Monitor", "The exception thrown by the task was: " + ext.Task.Exception);
 							}
+							if(!ext.Extension.IsRunning || ext.Task.IsCompleted || ext.Task.IsFaulted)
+								_cancelSource.Cancel();
+						}
 						if(client != null)
 						{
 							client.KeepExtensionProcessAlive(guid);

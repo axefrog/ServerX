@@ -173,7 +173,12 @@ namespace ServerX.ServiceConsole.Plugins
 				HelpDescription = "Lists all existing macros. This command has no arguments.",
 				Handler = (app, command, args) =>
 				{
-					//foreach(var m in app.ListMacros())
+					var macros = app.ListMacros();
+					if(macros.Count == 0)
+						return "%!There are no macros.";
+					var len = macros.Max(m => m.Name.Length);
+					foreach(var m in macros)
+						ColorConsole.WriteLinesLabelled(m.Name, len, ConsoleColor.Yellow, m.Command);
 					return null;
 				}
 			});
