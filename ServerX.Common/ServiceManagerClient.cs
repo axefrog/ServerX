@@ -25,17 +25,17 @@ namespace ServerX.Common
 
 		protected override void InitCallback(ServiceManagerCallback callback)
 		{
-			callback.NotificationReceived += (src, msg) =>
+			callback.NotificationReceived += (src, msg, lvl) =>
 			{
 				var handler = NotificationReceived;
 				if(handler != null)
-					handler(src, msg);
+					handler(src, msg, lvl);
 			};
-			callback.ExtensionNotificationReceived += (extID, extName, source, msg) =>
+			callback.ExtensionNotificationReceived += (extID, extName, source, msg, level) =>
 			{
 				var handler = ExtensionNotificationReceived;
 				if(handler != null)
-					handler(extID, extName, source, msg);
+					handler(extID, extName, source, msg, level);
 			};
 		}
 
@@ -160,24 +160,24 @@ namespace ServerX.Common
 
 	public class ServiceManagerCallback : IServiceManagerCallback
 	{
-		public void ServerExtensionNotify(string extID, string extName, string source, string message)
+		public void ServerExtensionNotify(string extID, string extName, string source, string message, LogLevel level)
 		{
 			var handler = ExtensionNotificationReceived;
 			if(handler != null)
-				handler(extID, extName, source, message);
+				handler(extID, extName, source, message, level);
 		}
 
-		public delegate void ExtensionNotificationHandler(string extID, string extName, string source, string message);
+		public delegate void ExtensionNotificationHandler(string extID, string extName, string source, string message, LogLevel level);
 		public event ExtensionNotificationHandler ExtensionNotificationReceived;
 
-		public void Notify(string source, string message)
+		public void Notify(string source, string message, LogLevel level)
 		{
 			var handler = NotificationReceived;
 			if(handler != null)
-				handler(source, message);
+				handler(source, message, level);
 		}
 
-		public delegate void NotificationHandler(string source, string message);
+		public delegate void NotificationHandler(string source, string message, LogLevel level);
 		public event NotificationHandler NotificationReceived;
 	}
 }

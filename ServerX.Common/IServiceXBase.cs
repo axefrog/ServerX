@@ -68,19 +68,28 @@ namespace ServerX.Common
 	public interface IServiceCallbackBase
 	{
 		[OperationContract(IsOneWay = true)]
-		void Notify(string source, string message);
+		void Notify(string source, string message, LogLevel level);
 	}
 
 	public abstract class ServiceCallbackBase : IServiceCallbackBase
 	{
-		public virtual void Notify(string source, string message)
+		public virtual void Notify(string source, string message, LogLevel level)
 		{
 			var handler = NotificationReceived;
 			if(handler != null)
-				handler(source, message);
+				handler(source, message, level);
 		}
 
-		public delegate void NotificationHandler(string source, string message);
+		public delegate void NotificationHandler(string source, string message, LogLevel level);
 		public event NotificationHandler NotificationReceived;
+	}
+
+	public enum LogLevel
+	{
+		Normal = 0,
+		/// <summary>
+		/// Extended log messages are not shown in the console under normal circumstances
+		/// </summary>
+		Extended = 1
 	}
 }

@@ -57,11 +57,11 @@ namespace ServerX
 				_clients.TryRemove(info.ID, out temp);
 				_logger.WriteLine("Extension Client Manager", "Lost connection to extension: " + (temp == null ? "(Unknown)" : temp.Name));
 			};
-			client.NotificationReceived += (src, msg) =>
+			client.NotificationReceived += (src, msg, lvl) =>
 			{
 				var handler = ExtensionNotificationReceived;
 				if(handler != null)
-					handler(info.ID, info.Name, src, msg);
+					handler(info.ID, info.Name, src, msg, lvl);
 			};
 
 			// make sure the extension ID is unique
@@ -101,6 +101,7 @@ namespace ServerX
 					_extProcMgr.RestartExtension(info.ExtProcID);
 					var msg = "command " + info.CommandID + " failed - the connection to the extension has broken. The extension will be restarted. Check the logs for fault exception details.";
 					_logger.WriteLine("Extension Client Manager", msg);
+					_clients.TryRemove(cmdID, out info);
 					return "%!" + msg;
 				}
 				catch(Exception ex)
@@ -108,6 +109,7 @@ namespace ServerX
 					_extProcMgr.RestartExtension(info.ExtProcID);
 					var msg = "command " + info.CommandID + " failed - An exception was thrown. The extension will be restarted. Exception details: " + ex;
 					_logger.WriteLine("Extension Client Manager", msg);
+					_clients.TryRemove(cmdID, out info);
 					return "%!" + msg;
 				}
 			}

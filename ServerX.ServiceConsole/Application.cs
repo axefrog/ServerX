@@ -112,18 +112,18 @@ namespace ServerX.ServiceConsole
 			return "%~Connected. Server time is " + dt + ".";
 		}
 
-		void OnNotificationReceived(string source, string message)
+		void OnNotificationReceived(string source, string message, LogLevel level)
 		{
 			var handler = NotificationReceived;
 			if(handler != null)
-				handler(source, message);
+				handler(source, message, level);
 		}
 
-		void OnExtensionNotificationReceived(string extID, string extName, string source, string message)
+		void OnExtensionNotificationReceived(string extID, string extName, string source, string message, LogLevel level)
 		{
 			var handler = ExtensionNotificationReceived;
 			if(handler != null)
-				handler(extID, extName, source, message);
+				handler(extID, extName, source, message, level);
 		}
 
 		void OnServiceDisconnected(ServiceManagerClient psc)

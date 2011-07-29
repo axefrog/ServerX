@@ -33,6 +33,7 @@ namespace ServerX.ServiceConsole.Plugins
 			public bool Local;
 			public bool AutoConnect;
 			public bool Watch { get; set; }
+			public bool Exit { get; set; }
 
 			public ServiceCommandParams()
 			{
@@ -93,6 +94,11 @@ namespace ServerX.ServiceConsole.Plugins
 				{ "watch|w", "Puts the console into watch mode if --connect is also specified", v =>
 					{
 						prms.Watch = true;
+					}
+				},
+				{ "exit|e", "Exits the console once the service command completes", v =>
+					{
+						prms.Exit = true;
 					}
 				},
 			};
@@ -160,7 +166,7 @@ namespace ServerX.ServiceConsole.Plugins
 					switch(prms.Action)
 					{
 						case ServiceAction.Status:
-							return null;
+							break;
 
 						case ServiceAction.Install:
 							bool success = true;
@@ -177,13 +183,17 @@ namespace ServerX.ServiceConsole.Plugins
 								if(prms.Watch)
 									Watch(app);
 							}
-							return null;
+							break;
 
 						case ServiceAction.Uninstall:
 							if(!prms.Local && !app.IsWindowsServiceRunning)
 								return "%!Can't uninstall; service is not installed.";
-							return app.StopHost() ? "%~Service uninstalled successfully." : "%!Service uninstallation failed.";
+							ColorConsole.WriteLine(app.StopHost() ? "%~Service uninstalled successfully." : "%!Service uninstallation failed.");
+							break;
 					}
+
+					if(prms.Exit && !prms.Watch)
+						app.ExitRequested = true;
 
 					return null;
 				}

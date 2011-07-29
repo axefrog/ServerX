@@ -53,9 +53,9 @@ namespace ServerX.Common
 			Logger.WriteLine("[" + ID + "] Client connected -> registration ID: " + id);
 		}
 
-		protected void Notify(string source, string message)
+		protected void Notify(string source, string message, LogLevel level)
 		{
-			CallbackEachClient<IServerExtensionCallback>(cb => cb.Notify(source, message));
+			CallbackEachClient<IServerExtensionCallback>(cb => cb.Notify(source, message, level));
 		}
 
 		public virtual bool HasMainLoop

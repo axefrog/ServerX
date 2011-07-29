@@ -19,7 +19,7 @@ namespace ServerX.Common
 		private readonly Mutex _mutex;
 		private string _path;
 
-		public delegate void LogNotificationHandler(string source, string message);
+		public delegate void LogNotificationHandler(string source, string message, LogLevel level);
 		public event LogNotificationHandler MessageLogged;
 
 		public bool WriteToConsole { get; set; }
@@ -78,7 +78,7 @@ namespace ServerX.Common
 
 		static Regex _colorRx = new Regex(@"(\%[\*\@\!\?\~\>\#])");
 		DateTime _lastWrite = DateTime.MinValue;
-		public void Write(object o, string source = null)
+		public void Write(object o, string source = null, LogLevel level = LogLevel.Normal)
 		{
 			foreach(var logger in _innerLoggers)
 				logger.Write(o);
@@ -86,7 +86,7 @@ namespace ServerX.Common
 			{
 				var eventhandler = MessageLogged;
 				if(eventhandler != null)
-					eventhandler(source, o.ToString());
+					eventhandler(source, o.ToString(), level);
 			}
 			o = _colorRx.Replace(o.ToString(), "");
 			_mutex.WaitOne();
@@ -112,9 +112,9 @@ namespace ServerX.Common
 		{
 			Write(o + Environment.NewLine);
 		}
-		public void WriteLine(string source, object o)
+		public void WriteLine(string source, object o, LogLevel level = LogLevel.Normal)
 		{
-			Write(o + Environment.NewLine, source);
+			Write(o + Environment.NewLine, source, level);
 		}
 		public void WriteLines(params object[] o)
 		{

@@ -21,8 +21,8 @@ namespace ServerX
 
 		public ServiceManager()
 		{
-			ExtensionNotificationReceived += (extID, extName, source, message) => CallbackEachClient<IServiceManagerCallback>(c => c.ServerExtensionNotify(extID, extName, source, message));
-			ServiceManagerNotificationReceived += (source, message) => CallbackEachClient<IServiceManagerCallback>(c => c.Notify(source, message));
+			ExtensionNotificationReceived += (extID, extName, source, message, level) => CallbackEachClient<IServiceManagerCallback>(c => c.ServerExtensionNotify(extID, extName, source, message, level));
+			ServiceManagerNotificationReceived += (source, message, level) => CallbackEachClient<IServiceManagerCallback>(c => c.Notify(source, message, level));
 
 			_extensionsBaseDir = new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extensions"));
 			if(!_extensionsBaseDir.Exists)
@@ -38,29 +38,29 @@ namespace ServerX
 			);
 
 			_extClientMgr = new ExtensionClientManager(_extProcMgr, extProcLog);
-			_extClientMgr.ExtensionNotificationReceived += (extID, extName, source, message) =>
+			_extClientMgr.ExtensionNotificationReceived += (extID, extName, source, message, level) =>
 			{
 				var handler = ExtensionNotificationReceived;
 				if(handler != null)
-					handler(extID, extName, source, message);
+					handler(extID, extName, source, message, level);
 			};
 
-			extProcLog.MessageLogged += (src, msg) => Notify("Extension Manager", msg);
+			extProcLog.MessageLogged += (src, msg, lvl) => Notify("Extension Manager", msg, lvl);
 			_extProcMgr.StartMonitoring();
 
 			_extCfgMgr = new ExtensionsConfigFileManager(extProcLog, _extProcMgr);
 
 			_cmdRunner = new CommandRunner(this, _extClientMgr);
 			var cronLog = new Logger("cron");
-			cronLog.MessageLogged += (src, msg) => Notify("Cron Manager", msg);
+			cronLog.MessageLogged += (src, msg, lvl) => Notify("Cron Manager", msg, lvl);
 			_cronMgr = new CronManager(this, cronLog);
 		}
 
-		private void Notify(string src, string msg)
+		private void Notify(string src, string msg, LogLevel level)
 		{
 			var handler = ServiceManagerNotificationReceived;
 			if(handler != null)
-				handler(src, msg);
+				handler(src, msg, level);
 		}
 
 		public event ServiceManagerCallback.ExtensionNotificationHandler ExtensionNotificationReceived;
@@ -190,7 +190,7 @@ namespace ServerX
 			{
 				var info = _extClientMgr.TryConnect(extProcID, address);
 				if(info != null)
-					Notify(info.Name, "Extension connected and ready.");
+					Notify(info.Name, "Extension connected and ready.", LogLevel.Normal);
 			}
 		}
 

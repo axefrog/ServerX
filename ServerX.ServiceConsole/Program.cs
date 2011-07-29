@@ -62,15 +62,15 @@ namespace ServerX.ServiceConsole
 			//_app.DisplayServerNotificationsChanged += display =>{ if(display) FlushMessageBuffer(); };
 		}
 
-		void OnNotificationReceived(string source, string message)
+		void OnNotificationReceived(string source, string message, LogLevel level)
 		{
-			if(_app.DisplayServerNotifications)
+			if(_app.DisplayServerNotifications && level == LogLevel.Normal)
 				ColorConsole.WriteLinesLabelled("Service Manager", 15, ConsoleColor.Cyan, (!string.IsNullOrWhiteSpace(source) ? "%*[" + source + "]%* " : "") + message);
 		}
 
-		void OnExtensionNotificationReceived(string extID, string extName, string source, string message)
+		void OnExtensionNotificationReceived(string extID, string extName, string source, string message, LogLevel level)
 		{
-			if(_app.DisplayServerNotifications)
+			if(_app.DisplayServerNotifications && level == LogLevel.Normal)
 				ColorConsole.WriteLinesLabelled(extName, extName.Length, ConsoleColor.Magenta, (!string.IsNullOrWhiteSpace(source) ? "%*[" + source + "]%* " : "") + message);
 		}
 
