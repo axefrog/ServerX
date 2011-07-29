@@ -88,7 +88,6 @@
     <Compile Include="ServiceManagerCommand.cs" />
     <Compile Include="ServiceManagerCommands\ExecCommand.cs" />
     <Compile Include="ServiceManagerCommands\RestartCommand.cs" />
-    <Compile Include="PersistenceManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScriptRunner.cs" />
     <Compile Include="ServiceManager.cs" />

@@ -6,7 +6,7 @@ using System.Security.Principal;
 using System.Threading;
 using System.Web.Script.Serialization;
 
-namespace ServerX
+namespace ServerX.Common
 {
 	public class PersistenceManager<T> : IDisposable
 	{
@@ -121,13 +121,13 @@ namespace ServerX
 
 		bool _locked;
 
-		internal void Lock()
+		public void Lock()
 		{
 			_mutexCfgFile.WaitOne();
 			_locked = true;
 		}
 
-		internal void Unlock()
+		public void Unlock()
 		{
 			_mutexCfgFile.ReleaseMutex();
 			_locked = false;

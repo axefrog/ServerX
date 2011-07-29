@@ -70,6 +70,7 @@
     <Compile Include="JavaScriptInterface.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Mono.Options.cs" />
+    <Compile Include="PersistenceManager.cs" />
     <Compile Include="ServerExtension.cs" />
     <Compile Include="ExtensionsActivator.cs" />
     <Compile Include="SafeExtensionLoader.cs" />
