@@ -9,14 +9,14 @@ namespace ServerX.Common
 		[OperationContract]
 		DateTime GetServerTime();
 
-		[OperationContract]
-		Result SetExtensionDirectoryIncluded(string name, bool include);
+		//[OperationContract]
+		//Result SetExtensionDirectoryIncluded(string name, bool include);
 
-		[OperationContract]
-		Result SetExtensionsEnabledInDirectory(string name, bool enabled);
+		//[OperationContract]
+		//Result SetExtensionsEnabledInDirectory(string name, bool enabled);
 
-		[OperationContract]
-		Result SetExtensionEnabled(string name, bool enabled);
+		//[OperationContract]
+		//Result SetExtensionEnabled(string name, bool enabled);
 
 		[OperationContract]
 		Result RestartExtensions(string subdirName, params string[] extensionIDs);
@@ -24,11 +24,11 @@ namespace ServerX.Common
 		[OperationContract]
 		string[] ListExtensionDirectories();
 
-		[OperationContract]
-		string[] ListIncludedExtensionDirectories();
+		//[OperationContract]
+		//string[] ListIncludedExtensionDirectories();
 
-		[OperationContract]
-		ExtensionInfo[] ListAvailableExtensions();
+		//[OperationContract]
+		//ExtensionInfo[] ListAvailableExtensions();
 
 		[OperationContract]
 		ExtensionInfo[] ListExtensionsInDirectory(string name);
@@ -37,13 +37,13 @@ namespace ServerX.Common
 		string ExecuteCommand(string command, string[] args);
 
 		[OperationContract]
-		ExtensionInfo[] ListExtensionCommands();
+		CommandInfo[] ListExtensionCommands();
 
 		[OperationContract]
-		Command[] ListServiceManagerCommands();
+		CommandInfo[] ListServiceManagerCommands();
 
 		[OperationContract]
-		string GetCommandHelp(string command);
+		CommandInfo GetCommandInfo(string cmdAlias);
 
 		[OperationContract]
 		ScriptInfo[] ListScripts();

@@ -7,20 +7,21 @@ namespace ServerX.Common
 	public interface IServerExtension : IServiceXBase
 	{
 		string ID { [OperationContract] get; }
-		string CommandID { [OperationContract] get; }
 		string Name { [OperationContract] get; }
 		string Description { [OperationContract] get; }
+		bool SingleInstanceOnly { [OperationContract] get; }
 
 		[OperationContract]
 		string JsonCall(string name, string[] jsonArgs);
 
 		[OperationContract]
 		string GetJavaScriptWrapper();
+
+		[OperationContract]
+		CommandInfo[] GetCommands();
 		
 		[OperationContract]
-		string Command(string[] args);
-
-		bool SupportsCommandLine { [OperationContract] get; }
+		string Command(string cmdAlias, string[] args);
 
 		void Debug();
 	}

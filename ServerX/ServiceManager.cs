@@ -76,20 +76,20 @@ namespace ServerX
 			return DateTime.Now;
 		}
 
-		public Result SetExtensionDirectoryIncluded(string name, bool include)
-		{
-			throw new NotImplementedException();
-		}
+		//public Result SetExtensionDirectoryIncluded(string name, bool include)
+		//{
+		//    throw new NotImplementedException();
+		//}
 
-		public Result SetExtensionsEnabledInDirectory(string name, bool enabled)
-		{
-			throw new NotImplementedException();
-		}
+		//public Result SetExtensionsEnabledInDirectory(string name, bool enabled)
+		//{
+		//    throw new NotImplementedException();
+		//}
 
-		public Result SetExtensionEnabled(string name, bool enabled)
-		{
-			throw new NotImplementedException();
-		}
+		//public Result SetExtensionEnabled(string name, bool enabled)
+		//{
+		//    throw new NotImplementedException();
+		//}
 
 		public Result RestartExtensions(string subdirName, params string[] extensionIDs)
 		{
@@ -101,15 +101,15 @@ namespace ServerX
 			return _extensionsBaseDir.GetDirectories().Select(d => d.Name).ToArray();
 		}
 
-		public string[] ListIncludedExtensionDirectories()
-		{
-			throw new NotImplementedException();
-		}
+		//public string[] ListIncludedExtensionDirectories()
+		//{
+		//    throw new NotImplementedException();
+		//}
 
-		public ExtensionInfo[] ListAvailableExtensions()
-		{
-			throw new NotImplementedException();
-		}
+		//public ExtensionInfo[] ListAvailableExtensions()
+		//{
+		//    throw new NotImplementedException();
+		//}
 
 		public ExtensionInfo[] ListExtensionsInDirectory(string name)
 		{
@@ -122,19 +122,22 @@ namespace ServerX
 			return _cmdRunner.Execute(command, args);
 		}
 
-		public ExtensionInfo[] ListExtensionCommands()
+		public CommandInfo[] ListExtensionCommands()
 		{
-			return _extClientMgr.ListConnectedExtensions().Where(e => e.SupportsCommandLine).ToArray();
+			return _extClientMgr.ListConnectedExtensions()
+				.Where(e => e.Commands != null && e.Commands.Length > 0)
+				.SelectMany(e => e.Commands)
+				.ToArray();
 		}
 
-		public Command[] ListServiceManagerCommands()
+		public CommandInfo[] ListServiceManagerCommands()
 		{
 			return _cmdRunner.ListCommands();
 		}
 
-		public string GetCommandHelp(string command)
+		public CommandInfo GetCommandInfo(string cmdAlias)
 		{
-			throw new NotImplementedException();
+			return _cmdRunner.GetCommandInfo(cmdAlias);
 		}
 
 		public ScriptInfo[] ListScripts()

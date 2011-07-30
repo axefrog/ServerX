@@ -7,11 +7,11 @@ using ServerX.Common;
 
 namespace ServerX
 {
-	internal class ServiceManagerCommand
+	public class ServerExtensionCommand
 	{
 		public CommandInfo Details { get; set; }
 		public CommandExecuteHandler Handler { get; set; }
 
-		public delegate string CommandExecuteHandler(ServiceManager svc, string[] args);
+		public delegate string CommandExecuteHandler(ServerExtension ext, string[] args);
 	}
 }

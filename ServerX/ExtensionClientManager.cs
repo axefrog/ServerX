@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.ServiceModel;
 using System.Text;
-using System.Text.RegularExpressions;
 using ServerX.Common;
 
 namespace ServerX
@@ -13,7 +12,7 @@ namespace ServerX
 	{
 		private readonly ExtensionProcessManager _extProcMgr;
 		private readonly Logger _logger;
-		ConcurrentDictionary<string, ClientInfo> _clients = new ConcurrentDictionary<string, ClientInfo>();
+		List<ClientInfo> _clients = new List<ClientInfo>();
 
 		public ExtensionClientManager(ExtensionProcessManager extProcMgr, Logger logger)
 		{
@@ -37,12 +36,23 @@ namespace ServerX
 			{
 				client = new ServerExtensionClient(address);
 				client.RegisterClient();
-				info.ID = client.ID;
+				info.ExtensionID = client.ID;
+				if(client.SingleInstanceOnly)
+				{
+					bool isNotUnique;
+					lock(_clients)
+						isNotUnique = _clients.Any(c => c.ExtensionID == info.ExtensionID);
+					if(isNotUnique)
+					{
+						_logger.WriteLine("Extension Client Manager", "A second instance of the extension \"" + info.ExtensionID + "\" was found, but the extension has specified that only one instance is allowed to run at a time. The second instance will be stopped.");
+						_extProcMgr.Stop(extProcID);
+						return null;
+					}
+				}
 				info.ExtProcID = extProcID;
-				info.CommandID = Regex.Replace(client.CommandID ?? "", @"\s+", "").ToLower();
 				info.Name = client.Name;
 				info.Description = client.Description;
-				info.SupportsCommandLine = client.SupportsCommandLine;
+				info.Commands = client.GetCommands();
 				info.Client = client;
 				_logger.WriteLine("Extension Client Manager", "Connected to extension: " + info.Name);
 			}
@@ -53,77 +63,101 @@ namespace ServerX
 			}
 			client.Disconnected += c =>
 			{
-				ClientInfo temp;
-				_clients.TryRemove(info.ID, out temp);
-				_logger.WriteLine("Extension Client Manager", "Lost connection to extension: " + (temp == null ? "(Unknown)" : temp.Name));
+				lock(_clients)
+					_clients.Remove(info);
+				_logger.WriteLine("Extension Client Manager", "Lost connection to extension: " + info.Name);
 			};
 			client.NotificationReceived += (src, msg, lvl) =>
 			{
 				var handler = ExtensionNotificationReceived;
 				if(handler != null)
-					handler(info.ID, info.Name, src, msg, lvl);
+					handler(info.ExtensionID, info.Name, src, msg, lvl);
 			};
 
-			// make sure the extension ID is unique
-			if(_clients.ContainsKey(info.ID))
-			{
-				string cmdid = info.CommandID;
-				for(var i = 2; i < 50; i++) // 50 is an arbitrary limit in case something unexpected causes the loop to continue forever
-				{
-					cmdid = info.CommandID + i;
-					if(!_clients.ContainsKey(cmdid))
-					{
-						info.CommandID = cmdid;
-						break;
-					}
-				}
-				if(cmdid == info.CommandID)
-				{
-					client.Close();
-					return null;
-				}
-			}
-
-			return _clients.TryAdd(info.CommandID, info) ? info : null;
+			lock(_clients)
+				_clients.Add(info);
+			return info;
 		}
 
-		public string ExecuteCommand(string cmdID, string[] args)
+		private bool GetClient(string extID, int extNum, string cmdAlias, out ClientInfo client, out CommandInfo cmd)
 		{
-			ClientInfo info;
-			if(_clients.TryGetValue((cmdID ?? "").ToLower(), out info))
+			cmd = null;
+			IEnumerable<ClientInfo> candidates;
+			// get all the clients with the matching extension ID, or all clients if no ID was specified
+			lock(_clients)
+				candidates = _clients.Where(c => extID == null || string.Compare(c.ExtensionID, extID, true) == 0);
+			// filter down to clients containing the required command, then if no ID was specified, select the first
+			// matching client, or if an ID and an extension number was specified, select the nth matching client.
+			client = (from c in candidates
+					  where c.Commands != null
+					  from cc in c.Commands
+					  where cc.CommandAliases != null
+					  from ca in cc.CommandAliases
+					  where string.Compare(cmdAlias, ca, true) == 0
+					  select c).Skip(extID == null ? 0 : extNum - 1).FirstOrDefault();
+			if(client != null)
 			{
+				// select the first matching command with a preference for a command alias that appears first in the list.
+				// note that this obtuse way of getting the command is to allow for badly written extensions that contain
+				// more than one command with the same command alias.
+				cmd = client.Commands.Where(c => c.CommandAliases != null && c.CommandAliases.FirstOrDefault() == cmdAlias).FirstOrDefault()
+					?? client.Commands.Where(c => c.CommandAliases != null && c.CommandAliases.Any(a => a == cmdAlias)).FirstOrDefault();
+			}
+			return cmd != null;
+		}
+
+		public CommandInfo GetCommandInfo(string extID, int extNum, string cmdAlias)
+		{
+			ClientInfo client;
+			CommandInfo cmd;
+			return GetClient(extID, extNum, cmdAlias, out client, out cmd) ? cmd : null;
+		}
+
+		public string ExecuteCommand(string extID, int extNum, string cmdAlias, string[] args)
+		{
+			cmdAlias = cmdAlias.ToLower();
+			ClientInfo matchingClient;
+			CommandInfo cmd;
+			if(GetClient(extID, extNum, cmdAlias, out matchingClient, out cmd))
+			{
+				cmdAlias = cmd.CommandAliases.First();
 				try
 				{
-					return info.Client.Command(args);
+					return matchingClient.Client.Command(cmdAlias, args);
 				}
 				catch(CommunicationObjectFaultedException)
 				{
-					_extProcMgr.RestartExtension(info.ExtProcID);
-					var msg = "command " + info.CommandID + " failed - the connection to the extension has broken. The extension will be restarted. Check the logs for fault exception details.";
+					_extProcMgr.RestartExtension(matchingClient.ExtProcID);
+					var msg = "command " + cmdAlias + " failed - the connection to the extension has broken. The extension will be restarted. Check the logs for fault exception details.";
 					_logger.WriteLine("Extension Client Manager", msg);
-					_clients.TryRemove(cmdID, out info);
+					lock(_clients)
+						_clients.Remove(matchingClient);
 					return "%!" + msg;
 				}
 				catch(Exception ex)
 				{
-					_extProcMgr.RestartExtension(info.ExtProcID);
-					var msg = "command " + info.CommandID + " failed - An exception was thrown. The extension will be restarted. Exception details: " + ex;
+					_extProcMgr.RestartExtension(matchingClient.ExtProcID);
+					var msg = "command " + cmdAlias + " failed - An exception was thrown. The extension will be restarted. Exception details: " + ex;
 					_logger.WriteLine("Extension Client Manager", msg);
-					_clients.TryRemove(cmdID, out info);
+					lock(_clients)
+						_clients.Remove(matchingClient);
 					return "%!" + msg;
 				}
 			}
-			return "%!command %@" + cmdID + "%@ is no longer available.";
+			return "%!command %@" + cmdAlias + "%@ is invalid or is no longer available.";
 		}
 
 		public bool IsCommandAvailable(string cmd)
 		{
-			return _clients.ContainsKey(cmd);
+			cmd = cmd.ToLower();
+			lock(_clients)
+				return _clients.Any(c => c.Commands != null && c.Commands.Any(cc => cc.CommandAliases != null && cc.CommandAliases.Any(a => a.ToLower() == cmd)));
 		}
 
 		public ExtensionInfo[] ListConnectedExtensions()
 		{
-			return _clients.Values.Select(e => e.Clone()).ToArray();
+			lock(_clients)
+				return _clients.Select(e => e.Clone()).ToArray();
 		}
 
 		public event ServiceManagerCallback.ExtensionNotificationHandler ExtensionNotificationReceived;
@@ -131,7 +165,12 @@ namespace ServerX
 		public string GetJavaScriptWrappers()
 		{
 			var sb = new StringBuilder();
-			foreach(var client in _clients.Values.ToArray())
+
+			// only select the first client for each extension ID (will rework scripting later to make it possible to interact with multiple instances of a single extension)
+			ClientInfo[] clients;
+			lock(_clients)
+				clients = _clients.GroupBy(c => c.ExtensionID).Select(g => g.FirstOrDefault()).Where(c => c != null).ToArray();
+			foreach(var client in clients)
 				if(client.Client.State == CommunicationState.Opened)
 				{
 					try
@@ -140,7 +179,7 @@ namespace ServerX
 					}
 					catch(Exception ex)
 					{
-						sb.AppendLine("// ERROR: Unable to generate wrapper for extension " + client.ID + ": " + ex.Message);
+						sb.AppendLine("// ERROR: Unable to generate wrapper for extension " + client.ExtensionID + ": " + ex.Message);
 					}
 				}
 			return sb.ToString();
@@ -148,7 +187,9 @@ namespace ServerX
 
 		public string JsonCall(string extID, string methodName, string[] jsonArgs)
 		{
-			ClientInfo client = _clients.Values.FirstOrDefault(c => c.ID == extID);
+			ClientInfo client;
+			lock(_clients)
+				client = _clients.FirstOrDefault(c => c.ExtensionID == extID);
 			if(client == null || client.Client.State != CommunicationState.Opened)
 				return JavaScriptInterface.JsonErrorResponse("The specified extension (" + extID + ") is not currently connected - it may have crashed or be restarting");
 			try

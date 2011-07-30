@@ -86,6 +86,7 @@
     </Compile>
     <Compile Include="ExtensionClientManager.cs" />
     <Compile Include="ServiceManagerCommand.cs" />
+    <Compile Include="ServiceManagerCommands\CronCommand.cs" />
     <Compile Include="ServiceManagerCommands\ExecCommand.cs" />
     <Compile Include="ServiceManagerCommands\RestartCommand.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

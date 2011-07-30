@@ -83,7 +83,7 @@ namespace ServerX
 			try
 			{
 				using(var loader = new SafeExtensionLoader(_extensionsBasePath, dirName, false, null))
-					foundExtensionIDs = loader.AllExtensions.Select(e => e.ID).ToArray();
+					foundExtensionIDs = loader.AllExtensions.Select(e => e.ExtensionID).ToArray();
 			}
 			catch(FileNotFoundException)
 			{

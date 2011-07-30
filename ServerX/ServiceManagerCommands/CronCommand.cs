@@ -1,19 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.ServiceModel;
 using System.Text;
 using Mono.Options;
 using ServerX.Common;
 
 namespace ServerX.ServiceManagerCommands
 {
-	static class RestartCommand
+	static class CronCommand
 	{
 		private static OptionSet GetOptions(Options options = null, ServiceManager svc = null)
 		{
 			return new OptionSet
 			{
-				{ "subdir|s=", "Restricts the extensions to be restarted to a specific extension subdirectory", v => options.Subdirectory = v },
+				{ "status|s=", "Displays status information for all cron jobs", v => options.Subdirectory = v },
 				{ "<>", v => options.ExtensionIDs.Add(v) },
 			};
 		}
@@ -35,13 +36,12 @@ namespace ServerX.ServiceManagerCommands
 			{
 				Details = new CommandInfo
 				{
-					Title = "Restart Extension",
-					ShortDescription = "Reloads and restarts one or more extension processes",
-					CommandAliases = new[] { "restart" },
-					HelpUsage = "restart [args] {extensionID} {extensionID} ...",
-					HelpDescription = null,
+					Title = "Cron",
+					CommandAliases = new [] { "cron" },
+					ShortDescription = "Updates or queries the cron scheduler",
+					HelpDescription = "Used for interacting with the cron scheduler. You can create, modify or delete existing cron jobs and/or retrieve the status of the existing cron jobs.",
 					HelpOptions = GetOptions().WriteOptionDescriptions(),
-					HelpRemarks = null
+					HelpUsage = "cron [args]",
 				},
 				Handler = (svc, args) =>
 				{
@@ -56,10 +56,11 @@ namespace ServerX.ServiceManagerCommands
 						return "%!" + ex.Message;
 					}
 
-					var result = svc.RestartExtensions(options.Subdirectory, options.ExtensionIDs.ToArray());
-					if(!result.Success)
-						return "%!" + result.Message;
-					return "%~" + (result.Message ?? "Restart request issued.");
+
+					return null;
+					//if(!result.Success)
+					//    return "%!" + result.Message;
+					//return "%~" + (result.Message ?? "Restart request issued.");
 				}
 			};
 		}

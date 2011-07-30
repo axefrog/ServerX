@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
-using Mono.Options;
 using ServerX.Common;
 
 namespace ServerX.ServiceConsole.Plugins
@@ -27,7 +25,7 @@ namespace ServerX.ServiceConsole.Plugins
 			{
 				Title = "Quit",
 				CommandAliases = new [] { "quit", "exit", "e", "q" },
-				Description = "Exits the console",
+				ShortDescription = "Exits the console",
 				HelpDescription = "Exits the console. If a windows service is running, it will stay running and can be shut down by starting up the console again and calling %@svc stop%@.",
 				Handler = (app, command, args) =>
 				{
@@ -40,7 +38,7 @@ namespace ServerX.ServiceConsole.Plugins
 			{
 				Title = "Help",
 				CommandAliases = new [] { "help", "h", "?" },
-				Description = "Displays helpful information",
+				ShortDescription = "Displays helpful information",
 				HelpUsage = "help [command]",
 				HelpDescription = "Displays the help text for a given command. If no command is specified, general help is displayed.",
 				Handler = (app, command, args) =>
@@ -54,15 +52,15 @@ namespace ServerX.ServiceConsole.Plugins
 									+ "args is the command name followed by any command arguments.";
 
 						case 1:
-							ConsoleCommand cmd;
-							if(app.CommandsByAlias.TryGetValue(args[0].ToLower(), out cmd))
+							CommandInfo cmd;
+							if((cmd = app.GetCommandHelp(args[0])) != null)
 							{
 								var sb = new StringBuilder();
 								sb.AppendLine().AppendFormat("%*** {0} **%*", cmd.Title).AppendLine();
 								if(!string.IsNullOrWhiteSpace(cmd.HelpDescription))
 									sb.AppendLine().AppendLine("%?Description:%?").Append("    %>").AppendLine(cmd.HelpDescription.TrimEnd());
-								else if(!string.IsNullOrWhiteSpace(cmd.Description))
-									sb.AppendLine(cmd.Description.TrimEnd());
+								else if(!string.IsNullOrWhiteSpace(cmd.ShortDescription))
+									sb.AppendLine(cmd.ShortDescription.TrimEnd());
 								sb.AppendLine().AppendLine("%?Aliases%?").Append("    ").AppendLine(cmd.CommandAliases.Concat(", ", s => string.Concat("%@", s, "%@")));
 								if(!string.IsNullOrWhiteSpace(cmd.HelpUsage))
 									sb.AppendLine().AppendLine("%?Usage:%?").Append("    %>%@").Append(cmd.HelpUsage.TrimEnd()).AppendLine("%@");
@@ -84,24 +82,24 @@ namespace ServerX.ServiceConsole.Plugins
 			{
 				Title = "List Commands",
 				CommandAliases = new [] { "list", "l" },
-				Description = "Lists all commands and their descriptions",
+				ShortDescription = "Lists all commands and their descriptions",
 				HelpDescription = "Displays a list of available commands. This command has no arguments.",
 				Handler = (app, command, args) =>
 				{
 					var cmds = app.CommandsByTitle.Values;
-					var smcmds = app.Client != null ? app.Client.ListServiceManagerCommands() : new Command[0];
-					var extcmds = app.Client != null ? app.Client.ListExtensionCommands() : new ExtensionInfo[0];
+					var smcmds = app.Client != null ? app.Client.ListServiceManagerCommands() : new CommandInfo[0];
+					var extcmds = app.Client != null ? app.Client.ListExtensionCommands() : new CommandInfo[0];
 
 					var cmdlen = Math.Max(Math.Max(
 						cmds.Max(c => c.CommandAliases.First().Length),
 						smcmds.Length == 0 ? 0 : smcmds.Max(c => c.CommandAliases.First().Length)),
-						extcmds.Length == 0 ? 0 : extcmds.Max(c => c.CommandID.Length));
+						extcmds.Length == 0 ? 0 : extcmds.Max(c => c.CommandAliases.First().Length));
 
 					Console.WriteLine();
 					ColorConsole.WriteLine("Console Commands:", ConsoleColor.White);
 					Console.WriteLine();
 					foreach(var cmd in cmds.OrderBy(p => p.CommandAliases.First()))
-						ColorConsole.WriteLinesLabelled(cmd.CommandAliases.First(), cmdlen, ConsoleColor.Yellow, cmd.Description);
+						ColorConsole.WriteLinesLabelled(cmd.CommandAliases.First(), cmdlen, ConsoleColor.Yellow, cmd.ShortDescription);
 
 					if(app.Client != null)
 					{
@@ -109,15 +107,15 @@ namespace ServerX.ServiceConsole.Plugins
 						ColorConsole.WriteLine("Service Manager Commands:", ConsoleColor.White);
 						Console.WriteLine();
 						foreach(var cmd in smcmds.OrderBy(p => p.CommandAliases.First()))
-							ColorConsole.WriteLinesLabelled(cmd.CommandAliases.First(), cmdlen, ConsoleColor.Yellow, cmd.Description);
+							ColorConsole.WriteLinesLabelled(cmd.CommandAliases.First(), cmdlen, ConsoleColor.Yellow, cmd.ShortDescription);
 
 						if(extcmds.Length > 0)
 						{
 							Console.WriteLine();
 							ColorConsole.WriteLine("Server Extension Commands:", ConsoleColor.White);
 							Console.WriteLine();
-							foreach(var cmd in extcmds.OrderBy(p => p.CommandID))
-								ColorConsole.WriteLinesLabelled(cmd.CommandID, cmdlen, ConsoleColor.Yellow, cmd.Description);
+							foreach(var cmd in extcmds.OrderBy(p => p.CommandAliases.First()))
+								ColorConsole.WriteLinesLabelled(cmd.CommandAliases.First(), cmdlen, ConsoleColor.Yellow, cmd.ShortDescription);
 						}
 					}
 
@@ -132,7 +130,7 @@ namespace ServerX.ServiceConsole.Plugins
 			{
 				Title = "List Console Plugins",
 				CommandAliases = new [] { "consoleplugins", "cplugins", "cp" },
-				Description = "Displays a list of console plugins",
+				ShortDescription = "Displays a list of console plugins",
 				HelpDescription = "Displays a list of active console plugins. This command has no arguments.",
 				Handler = (app, command, args) =>
 				{
@@ -152,7 +150,7 @@ namespace ServerX.ServiceConsole.Plugins
 			{
 				Title = "Create/Set Macro",
 				CommandAliases = new [] { "#set" },
-				Description = "Creates or updates a command macro",
+				ShortDescription = "Creates or updates a command macro",
 				HelpUsage = "#set [name] [command and args...]",
 				HelpDescription = "Creating a macro allows you to use a brief string as shorthand for a console command and its arguments. No spaces allowed.",
 				HelpRemarks = "To run the macro, precede with an exclamation mark; e.g. !foo",
@@ -169,7 +167,7 @@ namespace ServerX.ServiceConsole.Plugins
 			{
 				Title = "List Macros",
 				CommandAliases = new [] { "#list" },
-				Description = "List all existing macros",
+				ShortDescription = "List all existing macros",
 				HelpDescription = "Lists all existing macros. This command has no arguments.",
 				Handler = (app, command, args) =>
 				{

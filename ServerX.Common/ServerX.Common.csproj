@@ -63,7 +63,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ColorConsole.cs" />
-    <Compile Include="Command.cs" />
+    <Compile Include="CommandInfo.cs" />
     <Compile Include="CommandResponse.cs" />
     <Compile Include="ClientBase.cs" />
     <Compile Include="IServiceXBase.cs" />
@@ -75,6 +75,7 @@
     <Compile Include="ExtensionsActivator.cs" />
     <Compile Include="SafeExtensionLoader.cs" />
     <Compile Include="ServerExtensionClient.cs" />
+    <Compile Include="ServerExtensionCommand.cs" />
     <Compile Include="TextFormatter.cs" />
     <Compile Include="IServerExtension.cs" />
     <Compile Include="IServiceManager.cs" />

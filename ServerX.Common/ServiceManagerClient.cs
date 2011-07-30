@@ -47,20 +47,20 @@ namespace ServerX.Common
 			return Channel.GetServerTime();
 		}
 
-		public Result SetExtensionDirectoryIncluded(string name, bool include)
-		{
-			return Channel.SetExtensionDirectoryIncluded(name, include);
-		}
+		//public Result SetExtensionDirectoryIncluded(string name, bool include)
+		//{
+		//    return Channel.SetExtensionDirectoryIncluded(name, include);
+		//}
 
-		public Result SetExtensionsEnabledInDirectory(string name, bool enabled)
-		{
-			return Channel.SetExtensionsEnabledInDirectory(name, enabled);
-		}
+		//public Result SetExtensionsEnabledInDirectory(string name, bool enabled)
+		//{
+		//    return Channel.SetExtensionsEnabledInDirectory(name, enabled);
+		//}
 
-		public Result SetExtensionEnabled(string name, bool enabled)
-		{
-			return Channel.SetExtensionEnabled(name, enabled);
-		}
+		//public Result SetExtensionEnabled(string name, bool enabled)
+		//{
+		//    return Channel.SetExtensionEnabled(name, enabled);
+		//}
 
 		public Result RestartExtensions(string subdirName, params string[] extensionIDs)
 		{
@@ -72,15 +72,15 @@ namespace ServerX.Common
 			return Channel.ListExtensionDirectories();
 		}
 
-		public string[] ListIncludedExtensionDirectories()
-		{
-			return Channel.ListIncludedExtensionDirectories();
-		}
+		//public string[] ListIncludedExtensionDirectories()
+		//{
+		//    return Channel.ListIncludedExtensionDirectories();
+		//}
 
-		public ExtensionInfo[] ListAvailableExtensions()
-		{
-			return Channel.ListAvailableExtensions();
-		}
+		//public ExtensionInfo[] ListAvailableExtensions()
+		//{
+		//    return Channel.ListAvailableExtensions();
+		//}
 
 		public ExtensionInfo[] ListExtensionsInDirectory(string name)
 		{
@@ -92,19 +92,19 @@ namespace ServerX.Common
 			return Channel.ExecuteCommand(command, args);
 		}
 
-		public ExtensionInfo[] ListExtensionCommands()
+		public CommandInfo[] ListExtensionCommands()
 		{
 			return Channel.ListExtensionCommands();
 		}
 
-		public Command[] ListServiceManagerCommands()
+		public CommandInfo[] ListServiceManagerCommands()
 		{
 			return Channel.ListServiceManagerCommands();
 		}
 
-		public string GetCommandHelp(string command)
+		public CommandInfo GetCommandInfo(string cmdAlias)
 		{
-			return Channel.GetCommandHelp(command);
+			return Channel.GetCommandInfo(cmdAlias);
 		}
 
 		public ScriptInfo[] ListScripts()

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Reflection;
 using System.ServiceModel;
 using System.ServiceModel.Description;
@@ -52,13 +53,15 @@ namespace ServerX.Common
 				try
 				{
 					var asm = Assembly.Load(Path.GetFileNameWithoutExtension(file.Name));
-					var typeMap = (from t in asm.GetTypes()
-								   where t.GetInterfaces().Any(i => i == typeof(IServerExtension)) && t.IsClass && !t.IsAbstract && t.GetConstructors().Where(i => i.GetParameters().Count() == 0).Any()
+					var types = (from t in asm.GetTypes()
+								 where t.GetInterfaces().Any(i => i == typeof(IServerExtension)) && t.IsClass && !t.IsAbstract && t.GetConstructors().Where(i => i.GetParameters().Count() == 0).Any()
+								 select t);
+					var typeMap = (from t in types
 								   select new { Ext = (IServerExtension)Activator.CreateInstance(t) }).ToDictionary(k => k.Ext.ID, v => v.Ext);
 					list.AddRange(
 						typeMap.Values.Select(ext => new ExtensionInfo
 						{
-							ID = ext.ID,
+							ExtensionID = ext.ID,
 							Name = ext.Name,
 							Description = ext.Description,
 							AssemblyQualifiedName = ext.GetType().AssemblyQualifiedName
@@ -94,7 +97,7 @@ namespace ServerX.Common
 		public void RunExtensions(Guid guid, string runDebugMethodOnExtension, params string[] ids)
 		{
 			if(ids.Length == 0)
-				ids = _infos.Select(i => i.ID).ToArray();
+				ids = _infos.Select(i => i.ExtensionID).ToArray();
 			_logger.WriteLines(
 				"Extensions Activator", "Starting extensions:",
 				"	=> " + string.Join(", ", ids),
@@ -234,11 +237,13 @@ namespace ServerX.Common
 
 		RunningExtension Activate(string id)
 		{
-			var info = _infos.FirstOrDefault(i => i.ID == id);
+			var info = _infos.FirstOrDefault(i => i.ExtensionID == id);
 			if(info == null)
 				throw new Exception("Cannot run extension with ID [" + id + "] - extension does not exist");
 			var type = Type.GetType(info.AssemblyQualifiedName);
 			var ext = (ServerExtension)Activator.CreateInstance(type);
+			ext.Init();
+
 			var host = new ServiceHost(ext);
 			host.Opening += (s,e) => OnServiceHostOpening(id);
 			host.Opened += (s,e) => OnServiceHostOpened(id);
@@ -248,6 +253,18 @@ namespace ServerX.Common
 			host.UnknownMessageReceived += (s,e) => OnServiceHostUnknownMessageReceived(id, e);
 
 			var port = ConfigurationManager.AppSettings[string.Concat(_dirName, ".", id, ".Port")];
+			// if a port was specified, make sure it's a valid port and that nothing else is already using it. otherwise just use a random free port.
+			if(port != null)
+			{
+				int p;
+				IPGlobalProperties igp;
+				if(!(int.TryParse(port, out p)
+					&& p >= 0 && p < 65535
+					&& !(igp = IPGlobalProperties.GetIPGlobalProperties()).GetActiveTcpListeners().Any(k => k.Port == p)
+					&& !igp.GetActiveUdpListeners().Any(k => k.Port == p)))
+					port = null;
+			}
+
 			var endPoint = new ServiceEndpoint(
 				ContractDescription.GetContract(ext.ContractType),
 				new NetTcpBinding("Default"),

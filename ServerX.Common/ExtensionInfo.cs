@@ -7,10 +7,7 @@ namespace ServerX.Common
 	public class ExtensionInfo
 	{
 		[DataMember]
-		public string ID { get; set; }
-
-		[DataMember]
-		public string CommandID { get; set; }
+		public string ExtensionID { get; set; }
 
 		[DataMember]
 		public string Name { get; set; }
@@ -19,7 +16,7 @@ namespace ServerX.Common
 		public string Description { get; set; }
 
 		[DataMember]
-		public bool SupportsCommandLine { get; set; }
+		public CommandInfo[] Commands { get; set; }
 
 		[IgnoreDataMember]
 		internal string AssemblyQualifiedName { get; set; }
@@ -28,12 +25,11 @@ namespace ServerX.Common
 		{
 			return new ExtensionInfo
 			{
-				ID = ID,
+				ExtensionID = ExtensionID,
 				Name = Name,
 				AssemblyQualifiedName = AssemblyQualifiedName,
-				CommandID = CommandID,
 				Description = Description,
-				SupportsCommandLine = SupportsCommandLine
+				Commands = Commands
 			};
 		}
 	}

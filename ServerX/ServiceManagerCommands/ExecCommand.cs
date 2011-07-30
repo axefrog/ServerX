@@ -14,11 +14,11 @@ namespace ServerX.ServiceManagerCommands
 		{
 			return new ServiceManagerCommand
 			{
-				Details = new Command
+				Details = new CommandInfo
 				{
 					Title = "Execute Script",
 					CommandAliases = new [] { "exec" },
-					Description = "Executes a script stored on the server",
+					ShortDescription = "Executes a script stored on the server",
 					HelpDescription = "Executes a script which has been stored on the server in the Scripts folder.",
 					HelpUsage = "exec {filename}",
 				},

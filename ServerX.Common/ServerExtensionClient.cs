@@ -17,11 +17,6 @@ namespace ServerX.Common
 			get { return Channel.ID; }
 		}
 
-		public string CommandID
-		{
-			get { return Channel.CommandID; }
-		}
-
 		public string Name
 		{
 			get { return Channel.Name; }
@@ -30,6 +25,11 @@ namespace ServerX.Common
 		public string Description
 		{
 			get { return Channel.Description; }
+		}
+
+		public bool SingleInstanceOnly
+		{
+			get { return Channel.SingleInstanceOnly; }
 		}
 
 		public string JsonCall(string name, string[] jsonArgs)
@@ -42,14 +42,14 @@ namespace ServerX.Common
 			return Channel.GetJavaScriptWrapper();
 		}
 
-		public string Command(string[] args)
+		public CommandInfo[] GetCommands()
 		{
-			return Channel.Command(args);
+			return Channel.GetCommands();
 		}
 
-		public bool SupportsCommandLine
+		public string Command(string cmdAlias, string[] args)
 		{
-			get { return Channel.SupportsCommandLine; }
+			return Channel.Command(cmdAlias, args);
 		}
 
 		void IServerExtension.Debug()

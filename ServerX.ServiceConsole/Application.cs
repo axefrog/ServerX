@@ -48,6 +48,16 @@ namespace ServerX.ServiceConsole
 			}
 		}
 
+		public CommandInfo GetCommandHelp(string cmdAlias)
+		{
+			ConsoleCommand cmd;
+			if(CommandsByAlias.TryGetValue(cmdAlias, out cmd))
+				return cmd;
+			if(Client != null && (Client.State == CommunicationState.Created || Client.State == CommunicationState.Opened))
+				return Client.GetCommandInfo(cmdAlias);
+			return null;
+		}
+
 		internal class ConsoleEvents
 		{
 			private Application _app;

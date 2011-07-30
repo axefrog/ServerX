@@ -15,7 +15,7 @@ namespace ServerX.Common
 		void KeepAlive();
 	}
 
-	public abstract class ServiceXBase
+	public abstract class ServiceXBase : IServiceXBase
 	{
 		Dictionary<Guid, OperationContext> _clients = new Dictionary<Guid, OperationContext>();
 		public void CallbackEachClient<TCallback>(Action<TCallback> callback)

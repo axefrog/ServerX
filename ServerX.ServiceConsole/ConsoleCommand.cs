@@ -7,10 +7,10 @@ using ServerX.Common;
 
 namespace ServerX.ServiceConsole
 {
-	public class ConsoleCommand : Command
+	public class ConsoleCommand : CommandInfo
 	{
 		public ConsoleCommandExecuteHandler Handler { get; set; }
 	}
 
-	public delegate string ConsoleCommandExecuteHandler(Application app, ConsoleCommand cmd, string[] args);
+	public delegate string ConsoleCommandExecuteHandler(Application app, CommandInfo cmd, string[] args);
 }

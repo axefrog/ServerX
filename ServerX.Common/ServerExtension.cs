@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.ServiceModel;
 using System.Threading;
 
@@ -8,13 +10,42 @@ namespace ServerX.Common
 	public abstract class ServerExtension : ServiceXBase, IServerExtension
 	{
 		public abstract string ID { get; }
-		public virtual string CommandID { get { return ID; } }
 		public abstract string Name { get; }
 		public abstract string Description { get; }
+		public abstract bool SingleInstanceOnly { get; }
 
-		public abstract bool SupportsCommandLine { get; }
+		public CommandInfo[] GetCommands()
+		{
+			return _commands.Where(cmd => cmd.Details != null && cmd.Handler != null).Select(cmd => cmd.Details).ToArray();
+		}
 
-		public abstract string Command(string[] args);
+		private List<ServerExtensionCommand> _commands = new List<ServerExtensionCommand>();
+		protected void RegisterCommand(ServerExtensionCommand cmd)
+		{
+			_commands.Add(cmd);
+		}
+
+		public abstract void Init();
+
+		public string Command(string cmdAlias, string[] args)
+		{
+			cmdAlias = cmdAlias.ToLower();
+			var cmd = _commands.FirstOrDefault(c => c.Details.CommandAliases != null && c.Details.CommandAliases.Any(a => a.ToLower() == cmdAlias));
+			if(cmd == null)
+				return "%!The command %@" + cmdAlias + "%@ is not valid for server extension \"" + ID + "\".%!";
+			if(cmd.Handler == null)
+				return "%!The handler for command %@" + cmdAlias + "%@ has not been implemented yet.%!";
+
+			try
+			{
+				return cmd.Handler(this, args);
+			}
+			catch(Exception ex)
+			{
+				Logger.WriteLine("COMMAND EXCEPTION: " + args.Concat(" ") + Environment.NewLine + ex);
+				throw;
+			}
+		}
 
 		public string JsonCall(string name, string[] jsonArgs)
 		{

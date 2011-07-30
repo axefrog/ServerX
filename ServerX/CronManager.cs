@@ -126,7 +126,7 @@ namespace ServerX
 								{
 									token.ThrowIfCancellationRequested();
 									response = _svc.ExecuteCommand(nextJob.Command, nextJob.Args);
-									_logger.WriteLine("Execution finished: " + (response ?? "(null response)") + Environment.NewLine);
+									_logger.WriteLine("Execution finished: " + (response ?? "(null response)"));
 								}
 								catch(Exception ex)
 								{

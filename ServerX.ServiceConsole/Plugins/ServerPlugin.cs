@@ -143,7 +143,7 @@ namespace ServerX.ServiceConsole.Plugins
 			{
 				Title = "Service Manager",
 				CommandAliases = new [] { "service", "svc", "s" },
-				Description = "Controls the active state of the service",
+				ShortDescription = "Controls the active state of the service",
 				HelpOptions = GetServiceCommandOptions().WriteOptionDescriptions(),
 				HelpUsage = "svc {start|stop|status} [options...]",
 				HelpDescription = "Starts or stops the service manager, or obtains its status.",
@@ -151,51 +151,58 @@ namespace ServerX.ServiceConsole.Plugins
 				Handler = (app, command, args) =>
 				{
 					app.DisplayServerNotifications = true;
-					var prms = new ServiceCommandParams();
-					var options = GetServiceCommandOptions(prms);
 					try
 					{
-						options.Parse(args);
-					}
-					catch(OptionException e)
-					{
-						ColorConsole.WriteLine("%!" + e.Message + "%!");
+						var prms = new ServiceCommandParams();
+						var options = GetServiceCommandOptions(prms);
+						try
+						{
+							options.Parse(args);
+						}
+						catch(OptionException e)
+						{
+							ColorConsole.WriteLine("%!" + e.Message + "%!");
+							return null;
+						}
+
+						switch(prms.Action)
+						{
+							case ServiceAction.Status:
+								break;
+
+							case ServiceAction.Install:
+								bool success = true;
+								if(!prms.Local && app.IsWindowsServiceRunning)
+									ColorConsole.WriteLine("%!Service is already installed.%!");
+								else
+								{
+									success = app.StartHost(prms.Port, prms.Local);
+									ColorConsole.WriteLine(success ? "%~Service now running on port " + prms.Port + "." : "%~Unable to start service on port " + prms.Port + ".");
+								}
+								if(prms.AutoConnect && success)
+								{
+									ColorConsole.WriteLine(app.Connect("localhost", prms.Port));
+									if(prms.Watch)
+										Watch(app);
+								}
+								break;
+
+							case ServiceAction.Uninstall:
+								if(!prms.Local && !app.IsWindowsServiceRunning)
+									return "%!Can't uninstall; service is not installed.";
+								ColorConsole.WriteLine(app.StopHost() ? "%~Service uninstalled successfully." : "%!Service uninstallation failed.");
+								break;
+						}
+
+						if(prms.Exit && !prms.Watch)
+							app.ExitRequested = true;
+
 						return null;
 					}
-
-					switch(prms.Action)
+					finally
 					{
-						case ServiceAction.Status:
-							break;
-
-						case ServiceAction.Install:
-							bool success = true;
-							if(!prms.Local && app.IsWindowsServiceRunning)
-								ColorConsole.WriteLine("%!Service is already installed.%!");
-							else
-							{
-								success = app.StartHost(prms.Port, prms.Local);
-								ColorConsole.WriteLine(success ? "%~Service now running on port " + prms.Port + "." : "%~Unable to start service on port " + prms.Port + ".");
-							}
-							if(prms.AutoConnect && success)
-							{
-								ColorConsole.WriteLine(app.Connect("localhost", prms.Port));
-								if(prms.Watch)
-									Watch(app);
-							}
-							break;
-
-						case ServiceAction.Uninstall:
-							if(!prms.Local && !app.IsWindowsServiceRunning)
-								return "%!Can't uninstall; service is not installed.";
-							ColorConsole.WriteLine(app.StopHost() ? "%~Service uninstalled successfully." : "%!Service uninstallation failed.");
-							break;
+						app.DisplayServerNotifications = false;
 					}
-
-					if(prms.Exit && !prms.Watch)
-						app.ExitRequested = true;
-
-					return null;
 				}
 			});
 
@@ -203,7 +210,7 @@ namespace ServerX.ServiceConsole.Plugins
 			{
 				Title = "Connect to Service Manager",
 				CommandAliases = new [] { "connect", "conn", "c" },
-				Description = "Attempts to connect to an active service manager",
+				ShortDescription = "Attempts to connect to an active service manager",
 				HelpDescription = "Connects to the service manager.",
 				HelpOptions = GetConnectCommandOptions().WriteOptionDescriptions(),
 				HelpUsage = "connect [options...]",
@@ -230,7 +237,7 @@ namespace ServerX.ServiceConsole.Plugins
 			{
 				Title = "Watch for Notifications",
 				CommandAliases = new [] { "watch", "w" },
-				Description = "Displays notifications as they are received",
+				ShortDescription = "Displays notifications as they are received",
 				HelpDescription = "Puts the console into an idle state where it will display any server notifications received.",
 				Handler = (app, command, args) =>
 				{

@@ -112,7 +112,7 @@ namespace ServerX.ExtensionRunner
 						// Verify that all plugins are available and if so, run them
 						logger.WriteLine("[list of all plugins]");
 						foreach(var plugin in loader.AllExtensions)
-							logger.WriteLine("\t" + plugin.ID + ": " + plugin.Name + " [" + (plugins.Count == 0 || plugins.Contains(plugin.ID) ? "ACTIVE" : "INACTIVE") + "]");
+							logger.WriteLine("\t" + plugin.ExtensionID + ": " + plugin.Name + " [" + (plugins.Count == 0 || plugins.Contains(plugin.ExtensionID) ? "ACTIVE" : "INACTIVE") + "]");
 						logger.WriteLine("[end of plugins list]");
 						loader.RunExtensions(guid, runDebugMethodOnExtension, plugins.ToArray());
 					}, src.Token);
