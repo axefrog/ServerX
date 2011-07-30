@@ -16,11 +16,17 @@ namespace ServerX.Common
 
 		public CommandInfo[] GetCommands()
 		{
-			return _commands.Where(cmd => cmd.Details != null && cmd.Handler != null).Select(cmd => cmd.Details).ToArray();
+			return _commands.Select(cmd => new CommandInfo(cmd)).ToArray();
 		}
 
-		private List<ServerExtensionCommand> _commands = new List<ServerExtensionCommand>();
-		protected void RegisterCommand(ServerExtensionCommand cmd)
+		private List<IServerExtensionCommand> _commands = new List<IServerExtensionCommand>();
+		protected void RegisterCommand<T>()
+			where T : IServerExtensionCommand, new()
+		{
+			_commands.Add(new T());
+		}
+
+		protected void RegisterCommand(IServerExtensionCommand cmd)
 		{
 			_commands.Add(cmd);
 		}
@@ -30,15 +36,13 @@ namespace ServerX.Common
 		public string Command(string cmdAlias, string[] args)
 		{
 			cmdAlias = cmdAlias.ToLower();
-			var cmd = _commands.FirstOrDefault(c => c.Details.CommandAliases != null && c.Details.CommandAliases.Any(a => a.ToLower() == cmdAlias));
+			var cmd = _commands.FirstOrDefault(c => c.CommandAliases != null && c.CommandAliases.Any(a => a.ToLower() == cmdAlias));
 			if(cmd == null)
 				return "%!The command %@" + cmdAlias + "%@ is not valid for server extension \"" + ID + "\".%!";
-			if(cmd.Handler == null)
-				return "%!The handler for command %@" + cmdAlias + "%@ has not been implemented yet.%!";
 
 			try
 			{
-				return cmd.Handler(this, args);
+				return cmd.Execute(this, args);
 			}
 			catch(Exception ex)
 			{

@@ -25,6 +25,12 @@ namespace ServerX.Common
 			Message = message;
 		}
 
+		public Result(Result result)
+		{
+			Success = result.Success;
+			Message = result.Message;
+		}
+
 		static Result()
 		{
 			Succeeded = new Result { Success = true };
