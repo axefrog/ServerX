@@ -15,6 +15,9 @@ namespace ServerX.Common
 		[DataMember]
 		public string Message { get; protected set; }
 
+		[DataMember]
+		public string Exception { get; set; }
+
 		protected Result()
 		{
 		}
@@ -29,6 +32,7 @@ namespace ServerX.Common
 		{
 			Success = result.Success;
 			Message = result.Message;
+			Exception = result.Exception;
 		}
 
 		static Result()
@@ -40,6 +44,16 @@ namespace ServerX.Common
 		public static Result Failed(string message)
 		{
 			return new Result { Message = message };
+		}
+
+		public static Result Failed(Exception ex, string message)
+		{
+			return new Result { Exception = ex.ToString(), Message = message };
+		}
+
+		public static Result Failed(Exception ex)
+		{
+			return new Result { Exception = ex.ToString(), Message = "An exception was thrown: " + ex.Message };
 		}
 
 		public static bool operator ==(Result a, bool b)

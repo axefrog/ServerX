@@ -20,13 +20,18 @@ namespace ServerX.Common
 			return Execute((TExtension)ext, args);
 		}
 
+		protected virtual string[] PreParseArguments(TExtension ext, string[] args)
+		{
+			return args;
+		}
+
 		public string Execute(TExtension ext, string[] args)
 		{
 			var prms = new TParameters();
 			var p = GetOptions(prms);
 			try
 			{
-				var unparsedArgs = p.Parse(args);
+				var unparsedArgs = p.Parse(PreParseArguments(ext, args));
 				return Execute(ext, prms, unparsedArgs);
 			}
 			catch(OptionException ex)
