@@ -54,10 +54,21 @@ namespace ServerX
 		{
 			_logger.WriteLine("Parsing extensions.txt file...");
 
+			IEnumerable<string> lines;
+			try
+			{
+				lines = _file.Exists ? File.ReadLines(_file.FullName) : new string[0];
+			}
+			catch(IOException ex)
+			{
+				_logger.WriteLine("Unable to read extensions file: " + ex.Message);
+				return;
+			}
+
 			var bag = new List<KeyValuePair<string, Guid>>(_extProcMgr.GetExtensionProcessList()
 				.Select(p => new KeyValuePair<string, Guid>(string.Concat(p.DirectoryName, '\t', p.RequestedExtensionIDs.Concat(",")).Trim(), p.ID)));
 
-			foreach(var line in _file.Exists ? File.ReadLines(_file.FullName) : new string[0])
+			foreach(var line in lines)
 			{
 				var linestr = Regex.Replace((line ?? "").Trim(), @"\t+", "\t");
 				if(string.IsNullOrWhiteSpace(linestr) || linestr.StartsWith("#"))
