@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using NCrontab;
+using NLog;
 using ServerX.Common;
 
 namespace ServerX
@@ -18,12 +18,11 @@ namespace ServerX
 		FileSystemWatcher _fsw;
 		CancellationTokenSource _cancelSource;
 		PersistenceManager<CronManagerSettings> _settings = new PersistenceManager<CronManagerSettings>("cron-settings");
-		Logger _logger;
+		Logger _logger = LogManager.GetCurrentClassLogger();
 
-		public CronManager(ServiceManager svc, Logger logger)
+		public CronManager(ServiceManager svc)
 		{
 			_svc = svc;
-			_logger = logger;
 			Init();
 		}
 
@@ -57,7 +56,7 @@ namespace ServerX
 		List<CronJob> _cronList;
 		void ReadAndParseFile()
 		{
-			_logger.WriteLine("Parsing cron.txt file...");
+			_logger.Info("Parsing cron.txt file...");
 			_cronList = new List<CronJob>();
 
 			foreach(var line in File.ReadAllLines(_file.FullName))
@@ -93,13 +92,13 @@ namespace ServerX
 
 				_cronList.Add(new CronJob(schedule, cronstr, cmd, args));
 			}
-			_logger.WriteLine("Found " + _cronList.Count + " cron job(s) - " + DateTime.Now + Environment.NewLine);
-			_logger.WriteLine("Cron job list successfully updated from config file.");
+			_logger.Info("Found " + _cronList.Count + " cron job(s) - " + DateTime.Now + Environment.NewLine);
+			_logger.Info("Cron job list successfully updated from config file.");
 		}
 
 		void OnCronFileChanged(object sender, FileSystemEventArgs e)
 		{
-			_logger.WriteLine("[FILECHANGE] " + e.ChangeType + Environment.NewLine);
+			_logger.Trace("[FILECHANGE] " + e.ChangeType + Environment.NewLine);
 			Init();
 		}
 
@@ -120,17 +119,17 @@ namespace ServerX
 						{
 							if(nextJob.NextRun <= DateTime.Now)
 							{
-								_logger.WriteLine("Executing: " + nextJob.CronString + " => " + nextJob.Command + " " + nextJob.Args.Concat(" "));
+								_logger.Info("Executing: " + nextJob.CronString + " => " + nextJob.Command + " " + nextJob.Args.Concat(" "));
 								string response;
 								try
 								{
 									token.ThrowIfCancellationRequested();
 									response = _svc.ExecuteCommand(nextJob.Command, nextJob.Args);
-									_logger.WriteLine("Execution finished: " + (response ?? "(null response)"));
+									_logger.Info("Execution finished: " + (response ?? "(null response)"));
 								}
 								catch(Exception ex)
 								{
-									_logger.WriteLine("[EXCEPTION] " + ex + Environment.NewLine);
+									_logger.WarnException("Exception thrown while executing command via cron", ex);
 								}
 								nextJob.Recalculate();
 							}

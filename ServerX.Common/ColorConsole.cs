@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using NLog;
 
 namespace ServerX.Common
 {
@@ -15,9 +16,37 @@ namespace ServerX.Common
 			Console.ResetColor();
 		}
 
+		public static void Write(string str, LogLevel level)
+		{
+			Console.ForegroundColor = GetColor(level);
+			Console.Write(str);
+			Console.ResetColor();
+		}
+
+		public static ConsoleColor GetColor(LogLevel level)
+		{
+			switch(level.Name)
+			{
+				case "Trace": return ConsoleColor.DarkGray;
+				case "Debug": return ConsoleColor.DarkMagenta;
+				case "Info": return ConsoleColor.Gray;
+				case "Warn": return ConsoleColor.DarkYellow;
+				case "Error": return ConsoleColor.DarkRed;
+				case "Fatal": return ConsoleColor.Red;
+			}
+			return ConsoleColor.Gray;
+		}
+
 		public static void WriteLine(string str, ConsoleColor color)
 		{
 			Console.ForegroundColor = color;
+			Console.WriteLine(str);
+			Console.ResetColor();
+		}
+
+		public static void WriteLine(string str, LogLevel level)
+		{
+			Console.ForegroundColor = GetColor(level);
 			Console.WriteLine(str);
 			Console.ResetColor();
 		}
@@ -26,7 +55,7 @@ namespace ServerX.Common
 		{
 			Console.ForegroundColor = color;
 			foreach(var line in str.BreakLines())
-				Console.WriteLine(str);
+				WriteLine(line);
 			Console.ResetColor();
 		}
 
@@ -56,23 +85,23 @@ namespace ServerX.Common
 			Console.ResetColor();
 		}
 
-		public static void WriteLinesLabelled(string label, int labelWidthChars, ConsoleColor labelColor, string text)
+		public static void WriteLinesLabelled(string label, int labelWidthChars, ConsoleColor labelColor, ConsoleColor textColor, string text)
 		{
 			var linelen = Console.BufferWidth - labelWidthChars - 2;
-			var helplines = text.BreakLines(linelen);
+			var textlines = text.BreakLines(linelen);
 			bool isFirst = true;
 			var padded = new string(' ', labelWidthChars + 2);
 			label = label.PadRight(labelWidthChars + 2);
 			Write(label, labelColor);
 			StringBuilder sb = new StringBuilder();
-			foreach(var line in helplines)
+			foreach(var line in textlines)
 			{
 				if(!isFirst)
 					sb.Append(padded);
 				sb.AppendLine(line);
 				isFirst = false;
 			}
-			WriteLines(sb.ToString());
+			WriteLines(sb.ToString(), textColor);
 		}
 
 		static void WriteColorCodedString(string str, Stack<string> colorStack)

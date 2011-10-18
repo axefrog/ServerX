@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using NLog;
 using ServerX.Common;
 
 namespace ServerX
@@ -13,12 +14,12 @@ namespace ServerX
 	public class ExtensionProcessManager : IDisposable
 	{
 		private readonly Logger _logger;
-		public ExtensionProcessManager(Logger logger, string launcherExePath, string extensionsBasePath, bool killOrphanedProcesses = true, TimeSpan monitorInterval = default(TimeSpan))
+		public ExtensionProcessManager(string launcherExePath, string extensionsBasePath, bool killOrphanedProcesses = true, TimeSpan monitorInterval = default(TimeSpan))
 		{
 			if(monitorInterval.Ticks <= 0)
 				monitorInterval = new TimeSpan(0, 0, 30);
 
-			_logger = logger;
+			_logger = LogManager.GetCurrentClassLogger();
 			_launcherExePath = launcherExePath;
 			_extensionsBasePath = extensionsBasePath;
 			_monitorInterval = monitorInterval;
@@ -33,10 +34,10 @@ namespace ServerX
 		internal void StartMonitoring()
 		{
 			_cancelSrc = new CancellationTokenSource();
-			Task.Factory.StartNew(() => MonitorProcesses(_cancelSrc.Token, _monitorInterval, _processes, _logger))
+			Task.Factory.StartNew(() => MonitorProcesses(_cancelSrc.Token, _monitorInterval, _processes))
 				.ContinueWith(t =>
 				{
-					_logger.WriteLine("Process Monitor threw an exception" + Environment.NewLine + t.Exception);
+					_logger.ErrorException("Process Monitor threw an exception", t.Exception);
 					if(_previousExceptions.Count > 0)
 					{
 						// remove exceptions that occurred more than 5 minutes ago
@@ -45,7 +46,7 @@ namespace ServerX
 						// if this exception has been thrown at least 5 times in the past 5 minutes, we should probably stop the monitoring process
 						if(_previousExceptions.Count >= 5 && _previousExceptions.All(p => p.Value.GetType() == t.Exception.GetType()))
 						{
-							_logger.WriteLine("!!! TOO MANY EXCEPTIONS - TERMINATING MONITORING THREAD !!!");
+							_logger.Fatal("!!! TOO MANY EXCEPTIONS - TERMINATING MONITORING THREAD !!!");
 							return;
 						}
 						_previousExceptions.Add(new KeyValuePair<DateTime, Exception>(DateTime.Now, t.Exception));
@@ -82,12 +83,12 @@ namespace ServerX
 			string[] foundExtensionIDs, activeExtensionIDs;
 			try
 			{
-				using(var loader = new SafeExtensionLoader(_extensionsBasePath, dirName, false, null))
-					foundExtensionIDs = loader.AllExtensions.Select(e => e.ExtensionID).ToArray();
+				using(var loader = new SafeExtensionLoader(_extensionsBasePath, dirName, "", null))
+					foundExtensionIDs = loader.AvailableExtensions.Select(e => e.ExtensionID).ToArray();
 			}
 			catch(FileNotFoundException)
 			{
-				_logger.WriteLine("Unable to start extension process - the extension subdirectory \"" + dirName + "\" does not exist or does not contain a valid set of extension assemblies.");
+				_logger.Error("Unable to start extension process - the extension subdirectory \"" + dirName + "\" does not exist or does not contain a valid set of extension assemblies.");
 				return null;
 			}
 			if(requestedExtensionIDs == null || requestedExtensionIDs.Length == 0)
@@ -102,7 +103,7 @@ namespace ServerX
 				ActiveExtensionIDs = activeExtensionIDs,
 				Timeout = DateTime.UtcNow.Add(_monitorInterval).AddSeconds(ExtensionStartupSeconds) // we add 5 seconds to give the process time to start
 			};
-			_logger.WriteLine("Starting new process for extensions in /" + dirName + " - " + info.ID + " (" + (activeExtensionIDs.Length == 0 ? "all" : activeExtensionIDs.Concat(", ")) + ")");
+			_logger.Info("Starting new process for extensions in /" + dirName + " - " + info.ID + " (" + (activeExtensionIDs.Length == 0 ? "all" : activeExtensionIDs.Concat(", ")) + ")");
 			var cmdargs = string.Format(
 				"-subdir \"{0}\" -basedir \"{1}\" -pid={2} -guid \"{3}\"{4}",
 				dirName, _extensionsBasePath, Process.GetCurrentProcess().Id, info.ID, activeExtensionIDs.Concat(s => " " + s)
@@ -120,8 +121,9 @@ namespace ServerX
 			return info;
 		}
 
-		private static void MonitorProcesses(CancellationToken token, TimeSpan interval, ConcurrentDictionary<Guid, ProcessInfo> processes, Logger logger)
+		private static void MonitorProcesses(CancellationToken token, TimeSpan interval, ConcurrentDictionary<Guid, ProcessInfo> processes)
 		{
+			var logger = LogManager.GetCurrentClassLogger();
 			DateTime nextCheck = DateTime.Now.Add(interval);
 			while(!token.IsCancellationRequested)
 			{
@@ -143,34 +145,34 @@ namespace ServerX
 								{
 									var exitCode = p.Process.ExitCode;
 									p.Process.Start();
-									logger.WriteLine("Process " + p.ID + " (" + p.DirectoryName + ") exited with code " + exitCode + " and so has been restarted");
+									logger.Info("Process " + p.ID + " (" + p.DirectoryName + ") exited with code " + exitCode + " and so has been restarted");
 								}
 								else if(p.Timeout < DateTime.Now)
 								{
-									logger.WriteLine("Process " + p.ID + " (" + p.DirectoryName + ") did not call back inside the timeout period and will be restarted... ");
+									logger.Warn("Process " + p.ID + " (" + p.DirectoryName + ") did not call back inside the timeout period and will be restarted... ");
 									p.Process.Kill();
 									p.Process.WaitForExit();
 									p.Process.Start();
-									logger.WriteLine("Process " + p.ID + " (" + p.DirectoryName + ") restarted successfully");
+									logger.Info("Process " + p.ID + " (" + p.DirectoryName + ") restarted successfully");
 								}
 								else if(p.RequestRestart)
 								{
 									p.RequestRestart = false;
-									logger.WriteLine("Restart requested for process " + p.ID + " (" + p.DirectoryName + ")");
+									logger.Info("Restart requested for process " + p.ID + " (" + p.DirectoryName + ")");
 									p.Process.Kill();
 									p.Process.WaitForExit();
 									p.Process.Start();
-									logger.WriteLine("Process " + p.ID + " (" + p.DirectoryName + ") restarted successfully");
+									logger.Info("Process " + p.ID + " (" + p.DirectoryName + ") restarted successfully");
 								}
 								else if(p.RequestShutdown)
 								{
 									p.RequestRestart = false;
-									logger.WriteLine("Shutdown requested for process " + p.ID + " (" + p.DirectoryName + ")");
+									logger.Info("Shutdown requested for process " + p.ID + " (" + p.DirectoryName + ")");
 									p.Process.Kill();
 									p.Process.WaitForExit();
 									ProcessInfo pi;
 									processes.TryRemove(p.ID, out pi);
-									logger.WriteLine("Process " + p.ID + " (" + p.DirectoryName + ") shutdown and removed successfully");
+									logger.Info("Process " + p.ID + " (" + p.DirectoryName + ") shut down and removed successfully");
 								}
 							}
 						}
@@ -182,7 +184,7 @@ namespace ServerX
 				}
 				catch(Exception ex)
 				{
-					logger.WriteLines("EXCEPTION: MonitorProcesses() (crash prevented - waiting 5 seconds before resuming)", ex);
+					logger.ErrorException("MonitorProcesses() (crash prevented - waiting 5 seconds before resuming)", ex);
 					Thread.Sleep(5000);
 				}
 				nextCheck = DateTime.Now.Add(interval);
@@ -222,12 +224,7 @@ namespace ServerX
 			}
 			catch(Exception ex)
 			{
-				_logger.WriteLines(
-					"EXCEPTION: Execute()",
-					"	=> dirName: " + dirName,
-					"	=> extensionIDs: " + extensionIDs.Concat(", "),
-					ex
-				);
+				_logger.ErrorException(string.Format("Exception while calling Execute() -- dirName: {0}, extension IDs: {1}", dirName, extensionIDs.Concat(", ")), ex);
 				return Guid.Empty;
 			}
 		}

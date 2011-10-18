@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ServiceModel;
+using NLog;
 
 namespace ServerX.Common
 {
@@ -160,24 +161,24 @@ namespace ServerX.Common
 
 	public class ServiceManagerCallback : IServiceManagerCallback
 	{
-		public void ServerExtensionNotify(string extID, string extName, string source, string message, LogLevel level)
+		public void ServerExtensionNotify(string extID, string extName, string logLevel, string source, string message)
 		{
 			var handler = ExtensionNotificationReceived;
 			if(handler != null)
-				handler(extID, extName, source, message, level);
+				handler(extID, extName, logLevel, source, message);
 		}
 
-		public delegate void ExtensionNotificationHandler(string extID, string extName, string source, string message, LogLevel level);
+		public delegate void ExtensionNotificationHandler(string extID, string extName, string logLevel, string source, string message);
 		public event ExtensionNotificationHandler ExtensionNotificationReceived;
 
-		public void Notify(string source, string message, LogLevel level)
+		public void Notify(string logLevel, string source, string message)
 		{
 			var handler = NotificationReceived;
 			if(handler != null)
-				handler(source, message, level);
+				handler(logLevel, source, message);
 		}
 
-		public delegate void NotificationHandler(string source, string message, LogLevel level);
+		public delegate void NotificationHandler(string logLevel, string source, string message);
 		public event NotificationHandler NotificationReceived;
 	}
 }

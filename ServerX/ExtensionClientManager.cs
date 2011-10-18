@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.ServiceModel;
 using System.Text;
+using NLog;
 using ServerX.Common;
 
 namespace ServerX
@@ -11,13 +12,12 @@ namespace ServerX
 	internal class ExtensionClientManager
 	{
 		private readonly ExtensionProcessManager _extProcMgr;
-		private readonly Logger _logger;
+		private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 		List<ClientInfo> _clients = new List<ClientInfo>();
 
-		public ExtensionClientManager(ExtensionProcessManager extProcMgr, Logger logger)
+		public ExtensionClientManager(ExtensionProcessManager extProcMgr)
 		{
 			_extProcMgr = extProcMgr;
-			_logger = logger;
 		}
 
 		internal class ClientInfo : ExtensionInfo
@@ -44,7 +44,7 @@ namespace ServerX
 						isNotUnique = _clients.Any(c => c.ExtensionID == info.ExtensionID);
 					if(isNotUnique)
 					{
-						_logger.WriteLine("Extension Client Manager", "A second instance of the extension \"" + info.ExtensionID + "\" was found, but the extension has specified that only one instance is allowed to run at a time. The second instance will be stopped.");
+						_logger.Warn("A second instance of the extension \"" + info.ExtensionID + "\" was found, but the extension has specified that only one instance is allowed to run at a time. The second instance will be stopped.");
 						_extProcMgr.Stop(extProcID);
 						return null;
 					}
@@ -54,18 +54,18 @@ namespace ServerX
 				info.Description = client.Description;
 				info.Commands = client.GetCommands();
 				info.Client = client;
-				_logger.WriteLine("Extension Client Manager", "Connected to extension: " + info.Name);
+				_logger.Info("Connected to extension: " + info.Name);
 			}
 			catch(Exception ex)
 			{
-				_logger.WriteLine("Extension Client Manager", "Exception thrown while trying to connect to extension \"" + info.Name + "\":" + Environment.NewLine + ex);
+				_logger.ErrorException("Exception thrown while trying to connect to extension \"" + info.Name + "\"", ex);
 				return null;
 			}
 			client.Disconnected += c =>
 			{
 				lock(_clients)
 					_clients.Remove(info);
-				_logger.WriteLine("Extension Client Manager", "Lost connection to extension: " + info.Name);
+				_logger.Info("Lost connection to extension: " + info.Name);
 			};
 			client.NotificationReceived += (src, msg, lvl) =>
 			{
@@ -129,7 +129,7 @@ namespace ServerX
 				{
 					_extProcMgr.RestartExtension(matchingClient.ExtProcID);
 					var msg = "command " + cmdAlias + " failed - the connection to the extension has broken. The extension will be restarted. Check the logs for fault exception details.";
-					_logger.WriteLine("Extension Client Manager", msg);
+					_logger.Warn(msg);
 					lock(_clients)
 						_clients.Remove(matchingClient);
 					return "%!" + msg;
@@ -138,7 +138,7 @@ namespace ServerX
 				{
 					_extProcMgr.RestartExtension(matchingClient.ExtProcID);
 					var msg = "command " + cmdAlias + " failed - An exception was thrown. The extension will be restarted. Exception details: " + ex;
-					_logger.WriteLine("Extension Client Manager", msg);
+					_logger.Warn(msg);
 					lock(_clients)
 						_clients.Remove(matchingClient);
 					return "%!" + msg;

@@ -9,9 +9,9 @@ namespace ServerX.Common
 		private readonly CancellationTokenSource _tokenSrc;
 		private readonly string _extensionsPath;
 		private AppDomain _appdomain;
-		private IExtensionsActivator _exts;
+		private IExtensionActivator _extActivator;
 
-		public SafeExtensionLoader(string extensionsBaseDir, string subdirName, bool outputToConsole, CancellationTokenSource tokenSrc)
+		public SafeExtensionLoader(string extensionsBaseDir, string subdirName, string parentProcessID, CancellationTokenSource tokenSrc)
 		{
 			_tokenSrc = tokenSrc;
 			_extensionsPath = Path.Combine(extensionsBaseDir, subdirName);
@@ -22,28 +22,28 @@ namespace ServerX.Common
 				ShadowCopyFiles = "true",
 				ShadowCopyDirectories = _extensionsPath
 			};
-			_appdomain = AppDomain.CreateDomain("ExtensionDirectoryLoader." + subdirName, null, setup);
-			_exts = (IExtensionsActivator)_appdomain.CreateInstanceAndUnwrap("ServerX.Common", "ServerX.Common.ExtensionsActivator");
-			_exts.Init(subdirName, outputToConsole);
+			_appdomain = AppDomain.CreateDomain("ExtensionDirectoryLoader." + subdirName + "." + Guid.NewGuid(), null, setup);
+			_extActivator = (IExtensionActivator)_appdomain.CreateInstanceAndUnwrap("ServerX.Common", "ServerX.Common.ExtensionActivator");
+			_extActivator.Init(subdirName, parentProcessID);
 		}
 
-		public ExtensionInfo[] AllExtensions
+		public ExtensionInfo[] AvailableExtensions
 		{
-			get { return _exts.Extensions ?? new ExtensionInfo[0]; }
+			get { return _extActivator.Extensions ?? new ExtensionInfo[0]; }
 		}
 
 		public void Dispose()
 		{
-			_exts.Dispose();
-			_exts = null;
+			_extActivator.Dispose();
+			_extActivator = null;
 			AppDomain.Unload(_appdomain);
 			_appdomain = null;
 		}
 
-		public void RunExtensions(Guid guid, string runDebugMethodOnExtension, params string[] ids)
+		public void RunExtension(Guid guid, bool runDebugMethodOnExtension, string id)
 		{
-			_tokenSrc.Token.Register(() => { if(_exts != null) _exts.SignalCancellation(); });
-			_exts.RunExtensions(guid, runDebugMethodOnExtension, ids);
+			_tokenSrc.Token.Register(() => { if(_extActivator != null) _extActivator.SignalCancellation(); });
+			_extActivator.RunExtension(guid, runDebugMethodOnExtension, id);
 		}
 
 		/// <summary>
@@ -54,7 +54,7 @@ namespace ServerX.Common
 		/// </summary>
 		public void RunMainAppThread()
 		{
-			_exts.RunMainAppThread();
+			_extActivator.RunMainAppThread();
 		}
 	}
 }

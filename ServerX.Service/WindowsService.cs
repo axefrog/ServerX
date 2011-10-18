@@ -6,6 +6,7 @@ using System.ServiceProcess;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Xml;
+using NLog;
 using ServerX.Common;
 
 namespace ServerX.Service
@@ -15,7 +16,6 @@ namespace ServerX.Service
 		public WindowsService()
 		{
 			Environment.CurrentDirectory = ConfigurationManager.AppSettings["DataDirectory"] ?? AppDomain.CurrentDomain.BaseDirectory;
-			_logger = new Logger("windows-service");
 			try
 			{
 				var prmsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServiceParams.txt");
@@ -36,7 +36,7 @@ namespace ServerX.Service
 			}
 			catch(Exception ex)
 			{
-				_logger.WriteLine(ex.ToString());
+				_logger.ErrorException("An exception was thrown while constructing the windows service class", ex);
 			}
 		}
 
@@ -48,30 +48,30 @@ namespace ServerX.Service
 
 		private ServiceHost _serviceHost;
 
-		Logger _logger;
+		Logger _logger = LogManager.GetCurrentClassLogger();
 		protected override void OnStart(string[] args)
 		{
-			_logger.Write("Service starting...\r\n");
+			_logger.Info("Service starting...\r\n");
 			try
 			{
 				_serviceHost.Open();
 			}
 			catch(Exception ex)
 			{
-				_logger.Write(ex.ToString());
+				_logger.Info(ex.ToString());
 				throw;
 			}
-			_logger.Write("Service started\r\n");
+			_logger.Info("Service started\r\n");
 		}
 
 		void OnTaskSchedulerUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
 		{
-			_logger.Write("UNTRAPPED TASK EXCEPTION:\r\n" + e.Exception);
+			_logger.FatalException("UNTRAPPED TASK EXCEPTION", e.Exception);
 		}
 
 		void OnAppDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
 		{
-			_logger.Write("UNTRAPPED SERVICE EXCEPTION:\r\n" + e.ExceptionObject);
+			_logger.FatalException("UNTRAPPED SERVICE EXCEPTION", (Exception)e.ExceptionObject);
 		}
 
 		void OnServiceHostUnknownMessageReceived(object sender, UnknownMessageReceivedEventArgs e)
@@ -79,37 +79,37 @@ namespace ServerX.Service
 			var writer = new StringWriter();
 			var dict = XmlDictionaryWriter.CreateDictionaryWriter(XmlWriter.Create(writer));
 			e.Message.WriteMessage(dict);
-			_logger.Write("UNKNOWN MESSAGE RECEIVED:" + Environment.NewLine + writer + Environment.NewLine);
+			_logger.Warn("UNKNOWN MESSAGE RECEIVED: {0}", writer);
 		}
 
 		void OnServiceHostOpened(object sender, EventArgs e)
 		{
-			_logger.Write("Service host opened." + Environment.NewLine);
+			_logger.Info("Service host opened.");
 		}
 
 		void OnServiceHostOpening(object sender, EventArgs e)
 		{
-			_logger.Write("Service host opening... " + Environment.NewLine);
+			_logger.Info("Service host opening... ");
 		}
 
 		void OnServiceHostFaulted(object sender, EventArgs e)
 		{
-			_logger.Write("Service host faulted!" + Environment.NewLine);
+			_logger.Info("Service host faulted!");
 		}
 
 		void OnServiceHostClosing(object sender, EventArgs e)
 		{
-			_logger.Write("Service host closing..." + Environment.NewLine);
+			_logger.Info("Service host closing...");
 		}
 
 		void OnServiceHostClosed(object sender, EventArgs e)
 		{
-			_logger.Write("Service host closed." + Environment.NewLine);
+			_logger.Info("Service host closed.");
 		}
 
 		protected override void OnStop()
 		{
-			_logger.Write("Service stopping...\r\n");
+			_logger.Info("Service stopping...");
 			try
 			{
 				_serviceHost.Close();
@@ -117,9 +117,9 @@ namespace ServerX.Service
 			}
 			catch(Exception ex)
 			{
-				_logger.Write(ex.ToString());
+				_logger.ErrorException("An exception was thrown while closing the service host", ex);
 			}
-			_logger.Write("Service stopped\r\n");
+			_logger.Info("Service stopped");
 		}
 	}
 }

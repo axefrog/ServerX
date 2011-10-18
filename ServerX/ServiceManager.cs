@@ -5,6 +5,7 @@ using System.Linq;
 using System.ServiceModel;
 using System.Text.RegularExpressions;
 using ServerX.Common;
+using NLog;
 
 namespace ServerX
 {
@@ -18,11 +19,12 @@ namespace ServerX
 		private ExtensionClientManager _extClientMgr;
 		private CommandRunner _cmdRunner;
 		private CronManager _cronMgr;
+		private Logger _logger = LogManager.GetCurrentClassLogger();
 
 		public ServiceManager()
 		{
-			ExtensionNotificationReceived += (extID, extName, source, message, level) => CallbackEachClient<IServiceManagerCallback>(c => c.ServerExtensionNotify(extID, extName, source, message, level));
-			ServiceManagerNotificationReceived += (source, message, level) => CallbackEachClient<IServiceManagerCallback>(c => c.Notify(source, message, level));
+			ExtensionNotificationReceived += (extID, extName, level, source, message) => CallbackEachClient<IServiceManagerCallback>(c => c.ServerExtensionNotify(extID, extName, level, source, message));
+			ServiceManagerNotificationReceived += (level, source, message) => CallbackEachClient<IServiceManagerCallback>(c => c.Notify(level, source, message));
 
 			_extensionsBaseDir = new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extensions"));
 			if(!_extensionsBaseDir.Exists)
@@ -30,37 +32,32 @@ namespace ServerX
 			if(_extensionsBaseDir.GetFiles().Select(f => f.Extension.ToLower()).Any(ext => _extensionFileExtensions.Contains(ext)))
 				throw new Exception("The extensions directory currently contains assemblies and/or executables. Extensions should be located in subdirectories of the Extensions folder; not the Extensions directory itself.");
 
-			var extProcLog = new Logger("ext-proc-mgr");
 			_extProcMgr = new ExtensionProcessManager(
-				extProcLog,
 				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServerX.Run.exe"),
 				Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extensions")
 			);
 
-			_extClientMgr = new ExtensionClientManager(_extProcMgr, extProcLog);
-			_extClientMgr.ExtensionNotificationReceived += (extID, extName, source, message, level) =>
+			_extClientMgr = new ExtensionClientManager(_extProcMgr);
+			_extClientMgr.ExtensionNotificationReceived += (extID, extName, level, source, message) =>
 			{
 				var handler = ExtensionNotificationReceived;
 				if(handler != null)
-					handler(extID, extName, source, message, level);
+					handler(extID, extName, level, source, message);
 			};
 
-			extProcLog.MessageLogged += (src, msg, lvl) => Notify("Extension Manager", msg, lvl);
 			_extProcMgr.StartMonitoring();
 
-			_extCfgMgr = new ExtensionsConfigFileManager(extProcLog, _extProcMgr);
+			_extCfgMgr = new ExtensionsConfigFileManager(_extProcMgr);
 
 			_cmdRunner = new CommandRunner(this, _extClientMgr);
-			var cronLog = new Logger("cron");
-			cronLog.MessageLogged += (src, msg, lvl) => Notify("Cron Manager", msg, lvl);
-			_cronMgr = new CronManager(this, cronLog);
+			_cronMgr = new CronManager(this);
 		}
 
-		private void Notify(string src, string msg, LogLevel level)
+		private void Notify(LogLevel level, string src, string msg)
 		{
 			var handler = ServiceManagerNotificationReceived;
 			if(handler != null)
-				handler(src, msg, level);
+				handler(level.ToString(), src, msg);
 		}
 
 		public event ServiceManagerCallback.ExtensionNotificationHandler ExtensionNotificationReceived;
@@ -113,8 +110,8 @@ namespace ServerX
 
 		public ExtensionInfo[] ListExtensionsInDirectory(string name)
 		{
-			using(var pl = new SafeExtensionLoader(_extensionsBaseDir.FullName, name, false, null))
-				return pl.AllExtensions;
+			using(var pl = new SafeExtensionLoader(_extensionsBaseDir.FullName, name, "", null))
+				return pl.AvailableExtensions;
 		}
 
 		public string ExecuteCommand(string command, string[] args)
@@ -193,7 +190,7 @@ namespace ServerX
 			{
 				var info = _extClientMgr.TryConnect(extProcID, address);
 				if(info != null)
-					Notify(info.Name, "Extension connected and ready.", LogLevel.Normal);
+					Notify(LogLevel.Info, info.Name, "Extension connected and ready.");
 			}
 		}
 

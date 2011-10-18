@@ -8,13 +8,14 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ServerX.Common;
+using NLog;
 
 namespace ServerX.ServiceConsole
 {
 	[Export]
 	class Program : IDisposable
 	{
-		static Logger _logger = new Logger("console-exceptions");
+		static Logger _logger = LogManager.GetCurrentClassLogger();
 		static void Main(string[] args)
 		{
 			Console.BufferWidth = 120;
@@ -36,12 +37,12 @@ namespace ServerX.ServiceConsole
 
 		static void OnTaskSchedulerUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
 		{
-			_logger.Write("UNTRAPPED TASK EXCEPTION:\r\n" + e.Exception);
+			_logger.FatalException("UNTRAPPED TASK EXCEPTION", e.Exception);
 		}
 
 		static void OnAppDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
 		{
-			_logger.Write("UNTRAPPED SERVICE EXCEPTION:\r\n" + e.ExceptionObject);
+			_logger.FatalException("UNTRAPPED SERVICE EXCEPTION", (Exception)e.ExceptionObject);
 		}
 
 		private Application _app;
@@ -62,16 +63,28 @@ namespace ServerX.ServiceConsole
 			//_app.DisplayServerNotificationsChanged += display =>{ if(display) FlushMessageBuffer(); };
 		}
 
-		void OnNotificationReceived(string source, string message, LogLevel level)
+		void OnNotificationReceived(string logLevel, string source, string message)
 		{
-			if(_app.DisplayServerNotifications && level == LogLevel.Normal)
-				ColorConsole.WriteLinesLabelled("Service Manager", 15, ConsoleColor.Cyan, (!string.IsNullOrWhiteSpace(source) ? "%*[" + source + "]%* " : "") + message);
+			WriteNotification("Service Manager", ConsoleColor.Cyan, logLevel, source, message);
 		}
 
-		void OnExtensionNotificationReceived(string extID, string extName, string source, string message, LogLevel level)
+		void OnExtensionNotificationReceived(string extID, string extName, string logLevel, string source, string message)
 		{
-			if(_app.DisplayServerNotifications && level == LogLevel.Normal)
-				ColorConsole.WriteLinesLabelled(extName, extName.Length, ConsoleColor.Magenta, (!string.IsNullOrWhiteSpace(source) ? "%*[" + source + "]%* " : "") + message);
+			WriteNotification(extName, ConsoleColor.Magenta, logLevel, source, message);
+		}
+
+		void WriteNotification(string label, ConsoleColor labelColor, string logLevel, string source, string message)
+		{
+			var level = LogLevel.FromString(logLevel);
+			if(!string.IsNullOrWhiteSpace(source))
+			{
+				var n = source.LastIndexOf('.');
+				if(n < source.Length - 1)
+					source = source.Substring(n + 1);
+				source = string.Concat("%*[", source, "]%* ");
+			}
+			if(_app.DisplayServerNotifications && LogLevel.FromString(logLevel) >= LogLevel.Info)
+				ColorConsole.WriteLinesLabelled(label, label.Length, labelColor, ColorConsole.GetColor(level), source + message);
 		}
 
 		//void OnStatusChanged(string plugin, string status)

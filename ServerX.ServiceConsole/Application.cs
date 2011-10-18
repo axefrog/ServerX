@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Web.Script.Serialization;
 using ServerX.Common;
 using ServerX.Service;
+using NLog;
 
 namespace ServerX.ServiceConsole
 {
@@ -122,18 +123,18 @@ namespace ServerX.ServiceConsole
 			return "%~Connected. Server time is " + dt + ".";
 		}
 
-		void OnNotificationReceived(string source, string message, LogLevel level)
+		void OnNotificationReceived(string logLevel, string source, string message)
 		{
 			var handler = NotificationReceived;
 			if(handler != null)
-				handler(source, message, level);
+				handler(logLevel.ToString(), source, message);
 		}
 
-		void OnExtensionNotificationReceived(string extID, string extName, string source, string message, LogLevel level)
+		void OnExtensionNotificationReceived(string extID, string extName, string logLevel, string source, string message)
 		{
 			var handler = ExtensionNotificationReceived;
 			if(handler != null)
-				handler(extID, extName, source, message, level);
+				handler(extID, extName, logLevel, source, message);
 		}
 
 		void OnServiceDisconnected(ServiceManagerClient psc)

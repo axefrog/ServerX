@@ -10,28 +10,37 @@ using System.ServiceModel.Description;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using NLog;
+using NLog.Config;
 
 namespace ServerX.Common
 {
-	internal interface IExtensionsActivator : IDisposable
+	internal interface IExtensionActivator : IDisposable
 	{
 		ExtensionInfo[] Extensions { get; }
-		void Init(string dirName, bool outputToConsole);
-		void RunExtensions(Guid guid, string runDebugMethodOnExtension, params string[] ids);
+		void Init(string dirName, string parentProcessId);
+		void RunExtension(Guid guid, bool runDebugMethodOnExtension, string extensionID);
 		void SignalCancellation();
 		void RunMainAppThread();
 	}
 
 	[Serializable]
-	internal class ExtensionsActivator : MarshalByRefObject, IExtensionsActivator
+	internal class ExtensionActivator : MarshalByRefObject, IExtensionActivator
 	{
 		private ExtensionInfo[] _infos;
 		private Logger _logger;
 
-		public void Init(string dirName, bool outputToConsole)
+		public void Init(string dirName, string parentProcessId)
 		{
+			var exeDir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.FullName;
+			GlobalDiagnosticsContext.Set("ExeBaseDir", exeDir);
+			GlobalDiagnosticsContext.Set("SubDirName", dirName);
+			GlobalDiagnosticsContext.Set("ParentProcess", parentProcessId);
+
+			ConfigurationItemFactory.Default.Targets.RegisterDefinition("ServiceManager", typeof(ServiceManagerTarget));
+
 			_dirName = dirName;
-			_logger = new Logger("extension-" + dirName) { WriteToConsole = outputToConsole };
+			_logger = LogManager.GetCurrentClassLogger();
 
 			AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
 			TaskScheduler.UnobservedTaskException += OnTaskSchedulerUnobservedTaskException;
@@ -66,7 +75,7 @@ namespace ServerX.Common
 							Description = ext.Description,
 							AssemblyQualifiedName = ext.GetType().AssemblyQualifiedName
 						})
-						);
+					);
 				}
 				catch(BadImageFormatException)
 				{
@@ -74,7 +83,7 @@ namespace ServerX.Common
 				}
 			}
 			_infos = list.ToArray();
-			_logger.WriteLine("Extensions Activator", "Obtained info for " + _infos.Length + " available extensions");
+			_logger.Info("Obtained info for " + _infos.Length + " available extensions");
 		}
 
 		public ExtensionInfo[] Extensions
@@ -89,95 +98,72 @@ namespace ServerX.Common
 			public string Address { get; set; }
 			public Task Task { get; set; }
 		}
-		private Dictionary<string, RunningExtension> _runningExtensions = new Dictionary<string, RunningExtension>();
-		private bool _allExtensionsStarted;
+		private RunningExtension _runningExtension;
+		private bool _extensionStarted;
 		private CancellationTokenSource _cancelSource = new CancellationTokenSource();
 		private string _dirName;
 
-		public void RunExtensions(Guid guid, string runDebugMethodOnExtension, params string[] ids)
+		public void RunExtension(Guid guid, bool runDebugMethodOnExtension, string extensionID)
 		{
-			if(ids.Length == 0)
-				ids = _infos.Select(i => i.ExtensionID).ToArray();
-			_logger.WriteLines(
-				"Extensions Activator", "Starting extensions:",
-				"	=> " + string.Join(", ", ids),
-				"	=> process monitor ID: " + guid
-			);
+			_logger.Info("Starting extension: {0} -- process monitor ID: {1}", extensionID, guid);
 
 			lock(this)
-			{
-				foreach(var id in ids)
-					_runningExtensions.Add(id, Activate(id));
-			}
+				_runningExtension = Activate(extensionID);
+			var ext = _runningExtension.Extension;
 
 			const TaskCreationOptions atp = TaskCreationOptions.AttachedToParent;
 			var task = Task.Factory.StartNew(() =>
 			{
 				try
 				{
-					_logger.WriteLine("Extension activation/monitoring task starting...");
+					_logger.Debug("Extension activation/monitoring task starting...");
 					lock(this)
+						_runningExtension.Task = Task.Factory.StartNew(() => ext.Run(_cancelSource), _cancelSource.Token, atp, TaskScheduler.Current);
+					_extensionStarted = true;
+					if(runDebugMethodOnExtension)
 					{
-						foreach(var ext in _runningExtensions.Values)
-						{
-							var extension = ext.Extension;
-							ext.Task = Task.Factory.StartNew(() => extension.Run(_cancelSource, _logger), _cancelSource.Token, atp, TaskScheduler.Current);
-						}
+						while(!ext.RunCalled && !_cancelSource.IsCancellationRequested)
+							Thread.Sleep(250); // give the extension a chance to start up
+						_cancelSource.Token.ThrowIfCancellationRequested();
+						ext.Debug();
 					}
-					_allExtensionsStarted = true;
-					IEnumerable<RunningExtension> debugs;
-					lock(this)
-						debugs = _runningExtensions.Values.Where(ext => ext.Extension.ID == runDebugMethodOnExtension);
-					foreach(var ext in debugs)
-					{
-						if(ext.Extension.ID == runDebugMethodOnExtension)
-						{
-							Thread.Sleep(1000); // give the extension a chance to start up
-							ext.Extension.Debug();
-						}
-					}
-
 
 					ServiceManagerClient client = null;
 					if(guid != Guid.Empty)
 					{
-						_logger.WriteLine("Monitor", "Connecting to Service Manager...");
+						_logger.Info("Connecting to Service Manager...");
 						client = new ServiceManagerClient("ServiceManagerClient");
 						client.Disconnected += c =>
 						{
-							_logger.WriteLine("Monitor/Client", "Client state changed to: " + c.State);
-							_logger.WriteLine("Monitor/Client", "Disconnected from service manager. Execution on all extensions will be cancelled now to allow the process to shut down.");
+							_logger.Info("Client state changed to: " + c.State);
+							_logger.Info("Disconnected from service manager. Execution on all extensions will be cancelled now to allow the process to shut down.");
 							_cancelSource.Cancel(); // process manager will take care of restarting this process
 						};
-						foreach(var ext in _runningExtensions.Values)
-						{
-							// Don't notify the server until Run has been called, otherwise the extension's Logger won't be available
-							while(!ext.Extension.RunCalled)
-								Thread.Sleep(250);
-							_logger.WriteLine("Monitor", "Sending extension connection address: " + ext.Address);
-							client.NotifyExtensionServiceReady(guid, ext.Address);
-						}
-						_logger.WriteLine("Monitor", "Connected.");
+
+						// Don't notify the server until Run has been called, otherwise the extension's Logger won't be available
+						while(!ext.RunCalled)
+							Thread.Sleep(250);
+						_logger.Info("Sending extension connection address: " + _runningExtension.Address);
+						client.NotifyExtensionServiceReady(guid, _runningExtension.Address);
+						_logger.Info("Connected.");
+						
 					}
 
-					_logger.WriteLine("Monitor", "" + _runningExtensions.Count + " extensions now running.");
-					var exitMsg = " Execution on all extensions will be cancelled now to allow the process to restart.";
+					_logger.Info("Extension is now running.");
+					const string exitMsg = " Execution on all extensions will be cancelled now to allow the process to restart.";
 					while(!_cancelSource.IsCancellationRequested)
 					{
-						foreach(var ext in _runningExtensions.Values)
+						if(!ext.IsRunning)
+							_logger.Info("Extension {" + ext.Name + "} IsRunning == false." + exitMsg);
+						if(_runningExtension.Task.IsCompleted)
+							_logger.Info("Extension {" + ext.Name + "} Task.IsCompleted == true." + exitMsg);
+						if(_runningExtension.Task.IsFaulted)
 						{
-							if(!ext.Extension.IsRunning)
-								_logger.WriteLine("Monitor", "Extension {" + ext.Extension.Name + "} IsRunning == false." + exitMsg);
-							if(ext.Task.IsCompleted)
-								_logger.WriteLine("Monitor", "Extension {" + ext.Extension.Name + "} Task.IsCompleted == true." + exitMsg);
-							if(ext.Task.IsFaulted)
-							{
-								_logger.WriteLine("Monitor", "Extension {" + ext.Extension.Name + "} Task.IsFaulted == true." + exitMsg);
-								_logger.WriteLine("Monitor", "The exception thrown by the task was: " + ext.Task.Exception);
-							}
-							if(!ext.Extension.IsRunning || ext.Task.IsCompleted || ext.Task.IsFaulted)
-								_cancelSource.Cancel();
+							_logger.Info("Extension {" + ext.Name + "} Task.IsFaulted == true." + exitMsg);
+							_logger.Info("The exception thrown by the task was: " + _runningExtension.Task.Exception);
 						}
+						if(!ext.IsRunning || _runningExtension.Task.IsCompleted || _runningExtension.Task.IsFaulted)
+							_cancelSource.Cancel();
 						if(client != null)
 						{
 							client.KeepExtensionProcessAlive(guid);
@@ -187,15 +173,15 @@ namespace ServerX.Common
 				}
 				catch(ThreadAbortException)
 				{
-					_logger.WriteLine("Monitor", "Extension state monitoring terminating.");
+					_logger.Warn("Extension state monitoring terminating.");
 				}
 				catch(Exception ex)
 				{
-					_logger.WriteLines("Monitor", "EXTENSION MONITORING TASK EXCEPTION:", ex);
+					_logger.FatalException("EXTENSION MONITORING TASK EXCEPTION:", ex);
 				}
 			}, _cancelSource.Token, atp, TaskScheduler.Current);
 
-			_logger.WriteLine("Extensions Activator", "Waiting on task threads to finish...");
+			_logger.Info("Waiting on task threads to finish...");
 			try
 			{
 				task.Wait(_cancelSource.Token);
@@ -203,30 +189,23 @@ namespace ServerX.Common
 			catch(OperationCanceledException)
 			{
 			}
-			_logger.WriteLine("Extensions Activator", "Task threads have all ended.");
+			_logger.Info("Task threads have all ended.");
 		}
 
 		/// <summary>
 		/// This method is only for specialised extensions that have processes requiring execution in the main thread.
-		/// In general, these sorts of extensions should be run in isolation from other extensions. If multiple active
-		/// extensions are found that want to run in the main app thread, an exception will be thrown as they should be
-		/// run in separate processes. This method will block until extensions are loaded and running.
+		/// In general, these sorts of extensions should be run in isolation from other extensions. This method will
+		/// block until the extensions is loaded and running.
 		/// </summary>
 		public void RunMainAppThread()
 		{
-			while(!_allExtensionsStarted && !_cancelSource.IsCancellationRequested)
+			while(!_extensionStarted && !_cancelSource.IsCancellationRequested)
 				Thread.Sleep(100);
-			IEnumerable<RunningExtension> list;
-			lock(this)
-				list = _runningExtensions.Values.Where(e => e.Extension.HasMainLoop);
-			if(list.Count() > 1)
-				throw new Exception("Multiple active extensions were found that have RunMainAppThreadLoop() implementations. Only one active extension is allowed to return true for HasMainLoop.");
-			var ext = list.FirstOrDefault();
-			if(ext != null && !_cancelSource.IsCancellationRequested)
+			if(_runningExtension.Extension.HasMainLoop && !_cancelSource.IsCancellationRequested)
 			{
-				while(!ext.Extension.RunCalled)
+				while(!_runningExtension.Extension.RunCalled)
 					Thread.Yield();
-				ext.Extension.RunMainAppThreadLoop(_cancelSource, _logger);
+				_runningExtension.Extension.RunMainAppThreadLoop(_cancelSource);
 			}
 		}
 
@@ -242,6 +221,7 @@ namespace ServerX.Common
 				throw new Exception("Cannot run extension with ID [" + id + "] - extension does not exist");
 			var type = Type.GetType(info.AssemblyQualifiedName);
 			var ext = (ServerExtension)Activator.CreateInstance(type);
+			ServiceManagerTarget.Extension = ext;
 			ext.Init();
 
 			var host = new ServiceHost(ext);
@@ -280,13 +260,13 @@ namespace ServerX.Common
 
 		void OnTaskSchedulerUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
 		{
-			_logger.WriteLines("UNOBSERVED TASK EXCEPTION:", e.Exception, Environment.NewLine);
+			_logger.FatalException("UNOBSERVED TASK EXCEPTION:", e.Exception);
 			throw e.Exception;
 		}
 
 		void OnAppDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
 		{
-			_logger.WriteLines("UNHANDLED APPDOMAIN EXCEPTION:", e.ExceptionObject, Environment.NewLine);
+			_logger.FatalException("UNHANDLED APPDOMAIN EXCEPTION:", (Exception)e.ExceptionObject);
 			throw (Exception)e.ExceptionObject;
 		}
 
@@ -295,48 +275,43 @@ namespace ServerX.Common
 			var writer = new StringWriter();
 			var dict = XmlDictionaryWriter.CreateDictionaryWriter(XmlWriter.Create(writer));
 			e.Message.WriteMessage(dict);
-			_logger.WriteLines(string.Concat("[", id, "] ", "UNKNOWN MESSAGE RECEIVED:"), writer);
+			_logger.Warn(string.Concat("[", id, "] ", "UNKNOWN MESSAGE RECEIVED: {0}"), writer.ToString());
 		}
 
 		void OnServiceHostOpened(string id)
 		{
-			_logger.WriteLine(string.Concat("[", id, "] ", "Service host opened."));
+			_logger.Info(string.Concat("[", id, "] ", "Service host opened."));
 		}
 
 		void OnServiceHostOpening(string id)
 		{
-			_logger.WriteLine(string.Concat("[", id, "] ", "Service host opening... "));
+			_logger.Info(string.Concat("[", id, "] ", "Service host opening... "));
 		}
 
 		void OnServiceHostFaulted(string id)
 		{
-			_logger.WriteLine(string.Concat("[", id, "] ", "Service host faulted!"));
+			_logger.Info(string.Concat("[", id, "] ", "Service host faulted!"));
 			throw new Exception("Service Host Faulted!");
 		}
 
 		void OnServiceHostClosing(string id)
 		{
-			_logger.WriteLine(string.Concat("[", id, "] ", "Service host closing..."));
+			_logger.Info(string.Concat("[", id, "] ", "Service host closing..."));
 		}
 
 		void OnServiceHostClosed(string id)
 		{
-			_logger.WriteLine(string.Concat("[", id, "] ", "Service host closed."));
+			_logger.Info(string.Concat("[", id, "] ", "Service host closed."));
 		}
 
 		public void Dispose()
 		{
 			lock(this)
-				if(_runningExtensions != null)
+				if(_runningExtension != null)
 				{
-					foreach(var id in _runningExtensions.Keys.ToArray()) // ToArray => prevents exceptions being thrown due to modification of the original collection during iteration
-					{
-						var ext = _runningExtensions[id];
-						_runningExtensions.Remove(id);
-						if(ext.Extension is IDisposable)
-							((IDisposable)ext.Extension).Dispose();
-					}
-					_runningExtensions = null;
+					if(_runningExtension.Extension is IDisposable)
+						((IDisposable)_runningExtension.Extension).Dispose();
+					_runningExtension = null;
 				}
 		}
 	}

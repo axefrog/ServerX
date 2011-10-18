@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Mono.Options;
+using NLog;
 
 namespace ServerX.Common
 {
@@ -13,6 +15,8 @@ namespace ServerX.Common
 		where TExtension : ServerExtension
 		where TParameters : class, new()
 	{
+		private Logger _logger = LogManager.GetCurrentClassLogger();
+
 		public string Execute(ServerExtension ext, string[] args)
 		{
 			if(!(ext is TExtension))
@@ -40,6 +44,7 @@ namespace ServerX.Common
 			}
 			catch(Exception ex)
 			{
+				_logger.ErrorException("Exception executing command: {" + CommandAliases.FirstOrDefault() + (" " + args.Concat(" ")).TrimEnd() + "}", ex);
 				return string.Concat("%!EXCEPTION: ", ex, "%!");
 			}
 		}

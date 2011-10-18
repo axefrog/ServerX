@@ -99,7 +99,7 @@ namespace ServerX.ServiceConsole.Plugins
 					ColorConsole.WriteLine("Console Commands:", ConsoleColor.White);
 					Console.WriteLine();
 					foreach(var cmd in cmds.OrderBy(p => p.CommandAliases.First()))
-						ColorConsole.WriteLinesLabelled(cmd.CommandAliases.First(), cmdlen, ConsoleColor.Yellow, cmd.ShortDescription);
+						ColorConsole.WriteLinesLabelled(cmd.CommandAliases.First(), cmdlen, ConsoleColor.Yellow, ConsoleColor.Gray, cmd.ShortDescription);
 
 					if(app.Client != null)
 					{
@@ -107,7 +107,7 @@ namespace ServerX.ServiceConsole.Plugins
 						ColorConsole.WriteLine("Service Manager Commands:", ConsoleColor.White);
 						Console.WriteLine();
 						foreach(var cmd in smcmds.OrderBy(p => p.CommandAliases.First()))
-							ColorConsole.WriteLinesLabelled(cmd.CommandAliases.First(), cmdlen, ConsoleColor.Yellow, cmd.ShortDescription);
+							ColorConsole.WriteLinesLabelled(cmd.CommandAliases.First(), cmdlen, ConsoleColor.Yellow, ConsoleColor.Gray, cmd.ShortDescription);
 
 						if(extcmds.Length > 0)
 						{
@@ -115,7 +115,7 @@ namespace ServerX.ServiceConsole.Plugins
 							ColorConsole.WriteLine("Server Extension Commands:", ConsoleColor.White);
 							Console.WriteLine();
 							foreach(var cmd in extcmds.OrderBy(p => p.CommandAliases.First()))
-								ColorConsole.WriteLinesLabelled(cmd.CommandAliases.First(), cmdlen, ConsoleColor.Yellow, cmd.ShortDescription);
+								ColorConsole.WriteLinesLabelled(cmd.CommandAliases.First(), cmdlen, ConsoleColor.Yellow, ConsoleColor.Gray, cmd.ShortDescription);
 						}
 					}
 
@@ -140,7 +140,7 @@ namespace ServerX.ServiceConsole.Plugins
 					ColorConsole.WriteLine("Active console plugins:", ConsoleColor.White);
 					Console.WriteLine();
 					foreach(var cmd in app.Plugins.Values.OrderBy(p => p.Name))
-						ColorConsole.WriteLinesLabelled(cmd.Name, cmdlen, ConsoleColor.Yellow, cmd.Description);
+						ColorConsole.WriteLinesLabelled(cmd.Name, cmdlen, ConsoleColor.Yellow, ConsoleColor.Gray, cmd.Description);
 
 					return null;
 				}
@@ -176,7 +176,7 @@ namespace ServerX.ServiceConsole.Plugins
 						return "%!There are no macros.";
 					var len = macros.Max(m => m.Name.Length);
 					foreach(var m in macros)
-						ColorConsole.WriteLinesLabelled(m.Name, len, ConsoleColor.Yellow, m.Command);
+						ColorConsole.WriteLinesLabelled(m.Name, len, ConsoleColor.Yellow, ConsoleColor.Gray, m.Command);
 					return null;
 				}
 			});

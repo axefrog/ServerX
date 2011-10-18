@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
 using System.Threading;
+using NLog;
 
 namespace ServerX.Common
 {
@@ -13,6 +14,12 @@ namespace ServerX.Common
 		public abstract string Name { get; }
 		public abstract string Description { get; }
 		public abstract bool SingleInstanceOnly { get; }
+
+		private NLog.Logger _logger;
+		protected ServerExtension()
+		{
+			_logger = LogManager.GetCurrentClassLogger();
+		}
 
 		public CommandInfo[] GetCommands()
 		{
@@ -46,7 +53,7 @@ namespace ServerX.Common
 			}
 			catch(Exception ex)
 			{
-				Logger.WriteLine("COMMAND EXCEPTION: " + args.Concat(" ") + Environment.NewLine + ex);
+				_logger.ErrorException("COMMAND EXCEPTION" + args.Concat(" "), ex);
 				throw;
 			}
 		}
@@ -62,15 +69,14 @@ namespace ServerX.Common
 		}
 
 		public bool RunCalled { get; private set; }
-		public void Run(CancellationTokenSource tokenSource, Logger logger)
+		public void Run(CancellationTokenSource tokenSource)
 		{
-			Logger = logger;
-			Logger.WriteLine("[" + ID + "] Run() called.");
+			_logger.Trace("[" + ID + "] Run() called.");
 			RunCalled = true;
-			Run(tokenSource);
+			RunInternal(tokenSource);
 		}
 
-		public abstract void Run(CancellationTokenSource tokenSource);
+		protected abstract void RunInternal(CancellationTokenSource tokenSource);
 		public abstract bool IsRunning { get; }
 
 		/// <summary>
@@ -81,16 +87,14 @@ namespace ServerX.Common
 			get { return typeof(IServerExtension); }
 		}
 
-		protected Logger Logger { get; private set; }
-
 		protected override void OnRegisterClient(Guid id)
 		{
-			Logger.WriteLine("[" + ID + "] Client connected -> registration ID: " + id);
+			_logger.Trace("[" + ID + "] Client connected -> registration ID: " + id);
 		}
 
-		protected void Notify(string source, string message, LogLevel level)
+		public void Notify(LogLevel level, string source, string message)
 		{
-			CallbackEachClient<IServerExtensionCallback>(cb => cb.Notify(source, message, level));
+			CallbackEachClient<IServerExtensionCallback>(cb => cb.Notify(level.ToString(), source, message));
 		}
 
 		public virtual bool HasMainLoop
@@ -104,7 +108,7 @@ namespace ServerX.Common
 		/// extensions are found that want to run in the main app thread, an exception will be thrown as they should be
 		/// run in separate processes. <see cref="HasMainLoop"/> should return true in order for this method to run.
 		/// </summary>
-		public virtual void RunMainAppThreadLoop(CancellationTokenSource cancelSource, Logger logger)
+		public virtual void RunMainAppThreadLoop(CancellationTokenSource cancelSource)
 		{
 		}
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
+using NLog;
 
 namespace ServerX.Common
 {
@@ -68,28 +69,19 @@ namespace ServerX.Common
 	public interface IServiceCallbackBase
 	{
 		[OperationContract(IsOneWay = true)]
-		void Notify(string source, string message, LogLevel level);
+		void Notify(string logLevel, string source, string message);
 	}
 
 	public abstract class ServiceCallbackBase : IServiceCallbackBase
 	{
-		public virtual void Notify(string source, string message, LogLevel level)
+		public virtual void Notify(string logLevel, string source, string message)
 		{
 			var handler = NotificationReceived;
 			if(handler != null)
-				handler(source, message, level);
+				handler(logLevel, source, message);
 		}
 
-		public delegate void NotificationHandler(string source, string message, LogLevel level);
+		public delegate void NotificationHandler(string logLevel, string source, string message);
 		public event NotificationHandler NotificationReceived;
-	}
-
-	public enum LogLevel
-	{
-		Normal = 0,
-		/// <summary>
-		/// Extended log messages are not shown in the console under normal circumstances
-		/// </summary>
-		Extended = 1
 	}
 }

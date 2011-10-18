@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ServiceModel;
+using NLog;
 
 namespace ServerX.Common
 {
@@ -84,6 +85,6 @@ namespace ServerX.Common
 	public interface IServiceManagerCallback : IServiceCallbackBase
 	{
 		[OperationContract(IsOneWay = true)]
-		void ServerExtensionNotify(string extID, string extName, string source, string message, LogLevel level);
+		void ServerExtensionNotify(string extID, string extName, string logLevel, string source, string message);
 	}
 }

@@ -49,6 +49,12 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="NLog, Version=2.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\..\..\Dependencies\NLog.dll</HintPath>
+    </Reference>
+    <Reference Include="NLog.Extended, Version=2.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\..\..\Dependencies\NLog.Extended.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
@@ -68,14 +74,14 @@
     <Compile Include="ClientBase.cs" />
     <Compile Include="IServiceXBase.cs" />
     <Compile Include="JavaScriptInterface.cs" />
-    <Compile Include="Logger.cs" />
     <Compile Include="Mono.Options.cs" />
     <Compile Include="PersistenceManager.cs" />
     <Compile Include="ServerExtension.cs" />
-    <Compile Include="ExtensionsActivator.cs" />
+    <Compile Include="ExtensionActivator.cs" />
     <Compile Include="SafeExtensionLoader.cs" />
     <Compile Include="ServerExtensionClient.cs" />
     <Compile Include="ServerExtensionCommand.cs" />
+    <Compile Include="ServiceManagerTarget.cs" />
     <Compile Include="TextFormatter.cs" />
     <Compile Include="IServerExtension.cs" />
     <Compile Include="IServiceManager.cs" />

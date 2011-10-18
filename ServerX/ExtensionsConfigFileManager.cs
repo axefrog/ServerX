@@ -4,6 +4,7 @@ using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using NLog;
 using ServerX.Common;
 
 namespace ServerX
@@ -13,11 +14,10 @@ namespace ServerX
 		private readonly ExtensionProcessManager _extProcMgr;
 		FileInfo _file = new FileInfo(Path.Combine(ConfigurationManager.AppSettings["DataDirectory"] ?? Environment.CurrentDirectory, "Config", "extensions.txt"));
 		FileSystemWatcher _fsw;
-		Logger _logger;
+		Logger _logger = LogManager.GetCurrentClassLogger();
 
-		public ExtensionsConfigFileManager(Logger logger, ExtensionProcessManager extProcMgr)
+		public ExtensionsConfigFileManager(ExtensionProcessManager extProcMgr)
 		{
-			_logger = logger;
 			_extProcMgr = extProcMgr;
 			Init();
 		}
@@ -46,13 +46,13 @@ namespace ServerX
 
 		void OnConfigFileChanged(object sender, FileSystemEventArgs e)
 		{
-			_logger.WriteLine("[FILECHANGE] " + e.ChangeType + Environment.NewLine);
+			_logger.Trace("[FILECHANGE] " + e.ChangeType);
 			Init();
 		}
 
 		private void UpdateRunningExtensions()
 		{
-			_logger.WriteLine("Parsing extensions.txt file...");
+			_logger.Info("Parsing extensions.txt file...");
 
 			IEnumerable<string> lines;
 			try
@@ -61,7 +61,7 @@ namespace ServerX
 			}
 			catch(IOException ex)
 			{
-				_logger.WriteLine("Unable to read extensions file: " + ex.Message);
+				_logger.WarnException("Unable to read extensions file", ex);
 				return;
 			}
 
@@ -87,13 +87,13 @@ namespace ServerX
 				var item = bag.FirstOrDefault(b => b.Key == linestr);
 				if(item.Key != null)
 				{
-					_logger.WriteLine("Extension config line matches pre-existing process: " + linestr);
+					_logger.Info("Extension config line matches pre-existing process: " + linestr);
 					bag.Remove(item);
 				}
 				else
 				{
 					// seeing as there were no entries in the bag matching the current linestr, we've identified a new process that needs to be started up
-					_logger.WriteLine("New extension config line found -> starting new extension process: " + linestr);
+					_logger.Info("New extension config line found -> starting new extension process: " + linestr);
 					_extProcMgr.Execute(dir, ids ?? new string[0]);
 				}
 			}
@@ -101,11 +101,11 @@ namespace ServerX
 			// anything left in the bag is no longer in the config file and needs to be shut down
 			foreach(var item in bag)
 			{
-				_logger.WriteLine("Existing extension process is no longer in the config file and will be shut down: " + item.Key);
+				_logger.Info("Existing extension process is no longer in the config file and will be shut down: " + item.Key);
 				_extProcMgr.Stop(item.Value);
 			}
 
-			_logger.WriteLine("Extensions list successfully updated from config file.");
+			_logger.Info("Extensions list successfully updated from config file.");
 		}
 
 		public void Dispose()
