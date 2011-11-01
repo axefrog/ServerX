@@ -83,7 +83,7 @@ namespace ServerX.ServiceConsole
 					source = source.Substring(n + 1);
 				source = string.Concat("%*[", source, "]%* ");
 			}
-			if(_app.DisplayServerNotifications && LogLevel.FromString(logLevel) >= LogLevel.Info)
+			if(_app.DisplayServerNotifications && LogLevel.FromString(logLevel) >= LogLevel.Trace)
 				ColorConsole.WriteLinesLabelled(label, label.Length, labelColor, ColorConsole.GetColor(level), source + message);
 		}
 
