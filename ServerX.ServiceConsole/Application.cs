@@ -127,7 +127,7 @@ namespace ServerX.ServiceConsole
 		{
 			var handler = NotificationReceived;
 			if(handler != null)
-				handler(logLevel.ToString(), source, message);
+				handler(logLevel, source, message);
 		}
 
 		void OnExtensionNotificationReceived(string extID, string extName, string logLevel, string source, string message)
@@ -144,7 +144,7 @@ namespace ServerX.ServiceConsole
 
 		public bool StartHost(int port, bool local = false)
 		{
-			StopHost();
+			//UninstallService();
 			if(!local)
 			{
 				File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServiceParams.txt"),
@@ -166,18 +166,25 @@ namespace ServerX.ServiceConsole
 			return true;
 		}
 
-		public bool StopHost()
+		public bool UninstallService()
 		{
-			if(IsWindowsServiceRunning)
-				return WindowsServiceInstaller.Install(true, new string[0]);
-
-			if(_serviceHost != null)
+			//if(IsWindowsServiceRunning)
+			try
 			{
-				_serviceHost.Close();
-				_serviceHost = null;
-				return true;
+				return WindowsServiceInstaller.Install(true, new string[0]);
 			}
-			return false;
+			catch
+			{
+				return false;
+			}
+
+			//if(_serviceHost != null)
+			//{
+			//    _serviceHost.Close();
+			//    _serviceHost = null;
+			//    return true;
+			//}
+			//return false;
 		}
 
 		public void Execute(string commandString)

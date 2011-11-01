@@ -188,9 +188,9 @@ namespace ServerX.ServiceConsole.Plugins
 								break;
 
 							case ServiceAction.Uninstall:
-								if(!prms.Local && !app.IsWindowsServiceRunning)
-									return "%!Can't uninstall; service is not installed.";
-								ColorConsole.WriteLine(app.StopHost() ? "%~Service uninstalled successfully." : "%!Service uninstallation failed.");
+								//if(!prms.Local && !app.IsWindowsServiceRunning)
+								//    return "%!Can't uninstall; service is not installed.";
+								ColorConsole.WriteLine(app.UninstallService() ? "%~Service uninstalled successfully." : "%!Service uninstallation failed.");
 								break;
 						}
 

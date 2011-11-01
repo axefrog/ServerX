@@ -38,6 +38,7 @@ namespace ServerX.Common
 			GlobalDiagnosticsContext.Set("ParentProcess", parentProcessId);
 
 			ConfigurationItemFactory.Default.Targets.RegisterDefinition("ServiceManager", typeof(ServiceManagerTarget));
+			ConfigurationItemFactory.Default.Targets.RegisterDefinition("ServiceManagerNotification", typeof(NLog.Targets.NullTarget));
 
 			_dirName = dirName;
 			_logger = LogManager.GetCurrentClassLogger();

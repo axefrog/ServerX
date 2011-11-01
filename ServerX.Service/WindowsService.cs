@@ -7,17 +7,23 @@ using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Xml;
 using NLog;
+using NLog.Config;
 using ServerX.Common;
 
 namespace ServerX.Service
 {
 	public class WindowsService : ServiceBase
 	{
+		static WindowsService()
+		{
+			ConfigurationItemFactory.Default.Targets.RegisterDefinition("ServiceManagerNotification", typeof(ServiceManagerNotificationTarget));
+		}
+
 		public WindowsService()
 		{
-			Environment.CurrentDirectory = ConfigurationManager.AppSettings["DataDirectory"] ?? AppDomain.CurrentDomain.BaseDirectory;
 			try
 			{
+				Environment.CurrentDirectory = ConfigurationManager.AppSettings["DataDirectory"] ?? AppDomain.CurrentDomain.BaseDirectory;
 				var prmsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServiceParams.txt");
 				var prms = new JavaScriptSerializer().Deserialize<ServiceInstallParams>(File.ReadAllText(prmsPath));
 				try { File.Delete(prmsPath); }
@@ -36,7 +42,16 @@ namespace ServerX.Service
 			}
 			catch(Exception ex)
 			{
-				_logger.ErrorException("An exception was thrown while constructing the windows service class", ex);
+				try
+				{
+					_logger.ErrorException("An exception was thrown while constructing the windows service class", ex);
+					File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SERVICE-EXCEPTION.txt"), DateTime.UtcNow + " EXCEPTION:" + Environment.NewLine + ex);
+				}
+				catch(Exception ex2)
+				{
+					File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SERVICE-EXCEPTION.txt"), DateTime.UtcNow + " EXCEPTION (Unable to write to logger):" + Environment.NewLine + ex2);
+				}
+				throw;
 			}
 		}
 
@@ -51,14 +66,15 @@ namespace ServerX.Service
 		Logger _logger = LogManager.GetCurrentClassLogger();
 		protected override void OnStart(string[] args)
 		{
-			_logger.Info("Service starting...\r\n");
 			try
 			{
+				_logger.Info("Service starting...\r\n");
 				_serviceHost.Open();
 			}
 			catch(Exception ex)
 			{
 				_logger.Info(ex.ToString());
+				File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SERVICE-EXCEPTION.txt"), DateTime.UtcNow + " EXCEPTION:" + Environment.NewLine + ex);
 				throw;
 			}
 			_logger.Info("Service started\r\n");
