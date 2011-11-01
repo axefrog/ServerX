@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using NLog.Config;
 using ServerX.Common;
 using NLog;
 
@@ -15,9 +16,12 @@ namespace ServerX.ServiceConsole
 	[Export]
 	class Program : IDisposable
 	{
-		static Logger _logger = LogManager.GetCurrentClassLogger();
+		static Logger _logger;
 		static void Main(string[] args)
 		{
+			ConfigurationItemFactory.Default.Targets.RegisterDefinition("ServiceManagerNotification", typeof(ServiceManagerNotificationTarget));
+			_logger = LogManager.GetCurrentClassLogger();
+
 			Console.BufferWidth = 120;
 			Console.WindowWidth = 120;
 			Environment.CurrentDirectory = ConfigurationManager.AppSettings["DataDirectory"] ?? AppDomain.CurrentDomain.BaseDirectory;
@@ -58,9 +62,6 @@ namespace ServerX.ServiceConsole
 				plugin.Init(_app);
 			_app.NotificationReceived += OnNotificationReceived;
 			_app.ExtensionNotificationReceived += OnExtensionNotificationReceived;
-			//_app.MessagesReceived += OnMessagesReceived;
-			//_app.StatusChanged += OnStatusChanged;
-			//_app.DisplayServerNotificationsChanged += display =>{ if(display) FlushMessageBuffer(); };
 		}
 
 		void OnNotificationReceived(string logLevel, string source, string message)
@@ -83,67 +84,18 @@ namespace ServerX.ServiceConsole
 					source = source.Substring(n + 1);
 				source = string.Concat("%*[", source, "]%* ");
 			}
-			if(_app.DisplayServerNotifications && LogLevel.FromString(logLevel) >= LogLevel.Trace)
+			if(_app.DisplayServerNotifications)
 				ColorConsole.WriteLinesLabelled(label, label.Length, labelColor, ColorConsole.GetColor(level), source + message);
 		}
 
-		//void OnStatusChanged(string plugin, string status)
-		//{
-		//    OnMessagesReceived(LogMode.Normal, plugin, new[] { "%?Status changed:%? " + status });
-		//}
-
-		//class BufferedMessages
-		//{
-		//    public LogMode Mode { get; set; }
-		//    public string[] Messages { get; set; }
-		//    public string Plugin { get; set; }
-		//}
-		//LinkedList<BufferedMessages> _msgBuffer = new LinkedList<BufferedMessages>();
-		//void OnMessagesReceived(LogMode mode, string plugin, string[] messages)
-		//{
-		//    lock(_msgBuffer)
-		//    {
-		//        if(_msgBuffer.Count > 3)
-		//            _msgBuffer.RemoveFirst();
-		//        _msgBuffer.AddLast(new BufferedMessages { Mode = mode, Messages = messages, Plugin = plugin });
-		//        if(_app.DisplayServerNotifications)
-		//            FlushMessageBuffer();
-		//    }
-		//}
-		//void FlushMessageBuffer()
-		//{
-		//    lock(_msgBuffer)
-		//        if(_msgBuffer.Count > 0)
-		//            while(_msgBuffer.Count > 0)
-		//            {
-		//                var m = _msgBuffer.First.Value;
-		//                if((_app.PluginsToWatch.Count == 0 || _app.PluginsToWatch.Contains(m.Plugin)) && m.Mode <= _app.WatchMode)
-		//                    foreach(var msg in m.Messages)
-		//                        WriteBufferedMessage(m.Plugin, msg);
-		//                _msgBuffer.RemoveFirst();
-		//            }
-		//}
-		//private string _lastPluginFlushed;
-		//void WriteBufferedMessage(string plugin, string message)
-		//{
-		//    var name = plugin;
-		//    if(name == _lastPluginFlushed)
-		//        name = "";
-		//    else
-		//        _lastPluginFlushed = name;
-		//    if(_app.PluginsToWatch.Count == 1)
-		//        ColorConsole.WriteLines(message);
-		//    else
-		//        ColorConsole.WriteLinesLabelled(name, _app.MaxCommandLength, ConsoleColor.Magenta, message);
-		//}
-
 		public void Run(string[] args)
 		{
-			//if(args.Length > 0)
-			//    _app.Execute("run " + args[0]);
-			//else
-			//	ColorConsole.WriteLine("%?Type %@help%@ to get started.%?");
-			//match all arguments including quoted arguments, with quotes escapeable with a backslash
+			//ColorConsole.WriteLinesLabelled("Test", 4, ConsoleColor.Yellow, ColorConsole.GetColor(LogLevel.Trace), "LogLevel.Trace");
+			//ColorConsole.WriteLinesLabelled("Test", 4, ConsoleColor.Yellow, ColorConsole.GetColor(LogLevel.Debug), "LogLevel.Debug");
+			//ColorConsole.WriteLinesLabelled("Test", 4, ConsoleColor.Yellow, ColorConsole.GetColor(LogLevel.Info), "LogLevel.Info");
+			//ColorConsole.WriteLinesLabelled("Test", 4, ConsoleColor.Yellow, ColorConsole.GetColor(LogLevel.Warn), "LogLevel.Warn");
+			//ColorConsole.WriteLinesLabelled("Test", 4, ConsoleColor.Yellow, ColorConsole.GetColor(LogLevel.Error), "LogLevel.Error");
+			//ColorConsole.WriteLinesLabelled("Test", 4, ConsoleColor.Yellow, ColorConsole.GetColor(LogLevel.Fatal), "LogLevel.Fatal");
 
 			_events.NotifyReady();
 			while(true)

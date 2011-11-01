@@ -94,7 +94,7 @@ namespace ServerX.Common
 
 		public void Notify(LogLevel level, string source, string message)
 		{
-			CallbackEachClient<IServerExtensionCallback>(cb => cb.Notify(level.ToString(), source, message));
+			CallbackEachClient<IServerExtensionCallback>(cb => cb.Notify(level.Name, source, message));
 		}
 
 		public virtual bool HasMainLoop

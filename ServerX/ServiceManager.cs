@@ -19,10 +19,13 @@ namespace ServerX
 		private ExtensionClientManager _extClientMgr;
 		private CommandRunner _cmdRunner;
 		private CronManager _cronMgr;
-		private Logger _logger = LogManager.GetCurrentClassLogger();
+		private Logger _logger;
 
 		public ServiceManager()
 		{
+			ServiceManagerNotificationTarget.ServiceManager = this;
+			_logger = LogManager.GetCurrentClassLogger();
+
 			ExtensionNotificationReceived += (extID, extName, level, source, message) => CallbackEachClient<IServiceManagerCallback>(c => c.ServerExtensionNotify(extID, extName, level, source, message));
 			ServiceManagerNotificationReceived += (level, source, message) => CallbackEachClient<IServiceManagerCallback>(c => c.Notify(level, source, message));
 
@@ -57,7 +60,7 @@ namespace ServerX
 		{
 			var handler = ServiceManagerNotificationReceived;
 			if(handler != null)
-				handler(level.ToString(), src, msg);
+				handler(level.Name, src, msg);
 		}
 
 		public event ServiceManagerCallback.ExtensionNotificationHandler ExtensionNotificationReceived;
@@ -66,6 +69,11 @@ namespace ServerX
 		internal string JsonCall(string name, string[] jsonArgs)
 		{
 			return JavaScriptInterface.JsonCall(this, name, jsonArgs, JavaScriptInterface.ExcludedServiceManagerJsMethodNames);
+		}
+
+		internal void CreateNotification(string level, string source, string message)
+		{
+			CallbackEachClient<IServiceManagerCallback>(c => c.Notify(level, source, message));
 		}
 
 		public DateTime GetServerTime()

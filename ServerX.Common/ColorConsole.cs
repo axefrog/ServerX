@@ -28,10 +28,10 @@ namespace ServerX.Common
 			switch(level.Name)
 			{
 				case "Trace": return ConsoleColor.DarkGray;
-				case "Debug": return ConsoleColor.DarkMagenta;
+				case "Debug": return ConsoleColor.DarkCyan;
 				case "Info": return ConsoleColor.Gray;
-				case "Warn": return ConsoleColor.DarkYellow;
-				case "Error": return ConsoleColor.DarkRed;
+				case "Warn": return ConsoleColor.Yellow;
+				case "Error": return ConsoleColor.Red;
 				case "Fatal": return ConsoleColor.Red;
 			}
 			return ConsoleColor.Gray;
@@ -106,6 +106,7 @@ namespace ServerX.Common
 
 		static void WriteColorCodedString(string str, Stack<string> colorStack)
 		{
+			var baseColor = Console.ForegroundColor;
 			int len = 0;
 			foreach(string chunk in _colorRx.Split(str))
 			{
@@ -119,7 +120,7 @@ namespace ServerX.Common
 							if(colorStack.Count > 0)
 								SetColorByCode(colorStack.Peek());
 							else
-								Console.ResetColor();
+								Console.ForegroundColor = baseColor;
 						}
 						else
 						{
