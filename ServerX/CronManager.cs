@@ -92,7 +92,7 @@ namespace ServerX
 
 				_cronList.Add(new CronJob(schedule, cronstr, cmd, args));
 			}
-			_logger.Info("Found " + _cronList.Count + " cron job(s) - " + DateTime.Now + Environment.NewLine);
+			_logger.Info("Found {0} cron job(s) - {1}", _cronList.Count, DateTime.Now);
 			_logger.Info("Cron job list successfully updated from config file.");
 		}
 

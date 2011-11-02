@@ -22,8 +22,14 @@ namespace ServerX.ServiceConsole
 			ConfigurationItemFactory.Default.Targets.RegisterDefinition("ServiceManagerNotification", typeof(ServiceManagerNotificationTarget));
 			_logger = LogManager.GetCurrentClassLogger();
 
-			Console.BufferWidth = 120;
-			Console.WindowWidth = 120;
+			try
+			{
+				Console.BufferWidth = 120;
+				Console.WindowWidth = 120;
+			}
+			catch
+			{
+			}
 			Environment.CurrentDirectory = ConfigurationManager.AppSettings["DataDirectory"] ?? AppDomain.CurrentDomain.BaseDirectory;
 			AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
 			TaskScheduler.UnobservedTaskException += OnTaskSchedulerUnobservedTaskException;
