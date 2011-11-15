@@ -65,7 +65,14 @@ namespace ServerX
 		public class ExtensionInfo
 		{
 			public Guid ID { get; set; }
+			/// <summary>
+			/// The actual list of extensions that will be loaded for the specified process. Will be all available
+			/// extensions if none were explicitly requested.
+			/// </summary>
 			public string[] ActiveExtensionIDs { get; set; }
+			/// <summary>
+			/// A list of ExtensionIDs that were explicitly specified in the extensions.txt file.
+			/// </summary>
 			public string[] RequestedExtensionIDs { get; set; }
 			public string DirectoryName { get; set; }
 		}
@@ -145,34 +152,34 @@ namespace ServerX
 								{
 									var exitCode = p.Process.ExitCode;
 									p.Process.Start();
-									logger.Info("Process " + p.ID + " (" + p.DirectoryName + ") exited with code " + exitCode + " and so has been restarted");
+									logger.Info("Process " + DescribeProcess(p) + " exited with code " + exitCode + " and so has been restarted");
 								}
 								else if(p.Timeout < DateTime.Now)
 								{
-									logger.Warn("Process " + p.ID + " (" + p.DirectoryName + ") did not call back inside the timeout period and will be restarted... ");
+									logger.Warn("Process " + DescribeProcess(p) + " did not call back inside the timeout period and will be restarted... ");
 									p.Process.Kill();
 									p.Process.WaitForExit();
 									p.Process.Start();
-									logger.Info("Process " + p.ID + " (" + p.DirectoryName + ") restarted successfully");
+									logger.Info("Process " + DescribeProcess(p) + " restarted successfully");
 								}
 								else if(p.RequestRestart)
 								{
 									p.RequestRestart = false;
-									logger.Info("Restart requested for process " + p.ID + " (" + p.DirectoryName + ")");
+									logger.Info("Restart requested for process " + DescribeProcess(p));
 									p.Process.Kill();
 									p.Process.WaitForExit();
 									p.Process.Start();
-									logger.Info("Process " + p.ID + " (" + p.DirectoryName + ") restarted successfully");
+									logger.Info("Process " + DescribeProcess(p) + " restarted successfully");
 								}
 								else if(p.RequestShutdown)
 								{
 									p.RequestRestart = false;
-									logger.Info("Shutdown requested for process " + p.ID + " (" + p.DirectoryName + ")");
+									logger.Info("Shutdown requested for process " + DescribeProcess(p));
 									p.Process.Kill();
 									p.Process.WaitForExit();
 									ProcessInfo pi;
 									processes.TryRemove(p.ID, out pi);
-									logger.Info("Process " + p.ID + " (" + p.DirectoryName + ") shut down and removed successfully");
+									logger.Info("Process " + DescribeProcess(p) + " shut down and removed successfully");
 								}
 							}
 						}
@@ -189,6 +196,13 @@ namespace ServerX
 				}
 				nextCheck = DateTime.Now.Add(interval);
 			}
+		}
+
+		private static string DescribeProcess(ProcessInfo p)
+		{
+			if(p.RequestedExtensionIDs == null || p.RequestedExtensionIDs.Length == 0)
+				return string.Concat(p.DirectoryName, "[ALL]");
+			return string.Concat(p.DirectoryName, "[", p.ActiveExtensionIDs.Concat("|"), "]");
 		}
 
 		public List<ExtensionInfo> GetExtensionProcessList()
