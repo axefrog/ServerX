@@ -112,7 +112,7 @@ namespace ServerX.Common
 				_runningExtension = Activate(extensionID);
 			var ext = _runningExtension.Extension;
 
-			const TaskCreationOptions atp = TaskCreationOptions.AttachedToParent;
+			const TaskCreationOptions atp = TaskCreationOptions.AttachedToParent | TaskCreationOptions.LongRunning;
 			var task = Task.Factory.StartNew(() =>
 			{
 				try
