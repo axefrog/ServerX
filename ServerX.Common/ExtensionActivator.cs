@@ -112,14 +112,17 @@ namespace ServerX.Common
 				_runningExtension = Activate(extensionID);
 			var ext = _runningExtension.Extension;
 
-			const TaskCreationOptions atp = TaskCreationOptions.AttachedToParent;
-			var task = Task.Factory.StartNew(() =>
+			Thread extThread = new Thread(new ThreadStart(() => 
 			{
+			//const TaskCreationOptions atp = TaskCreationOptions.AttachedToParent | TaskCreationOptions.LongRunning;
+			//var task = Task.Factory.StartNew(() =>
+			//{
 				try
 				{
 					_logger.Debug("Extension activation/monitoring task starting...");
-					lock(this)
-						_runningExtension.Task = Task.Factory.StartNew(() => ext.Run(_cancelSource), _cancelSource.Token, atp, TaskScheduler.Current);
+					lock (this)
+						_runningExtension.Task = Task.Factory.StartNew(() => ext.Run(_cancelSource), TaskCreationOptions.LongRunning);
+						//_runningExtension.Task = Task.Factory.StartNew(() => ext.Run(_cancelSource), _cancelSource.Token, atp, TaskScheduler.Current);
 					_extensionStarted = true;
 					if(runDebugMethodOnExtension)
 					{
@@ -180,14 +183,20 @@ namespace ServerX.Common
 				{
 					_logger.FatalException("EXTENSION MONITORING TASK EXCEPTION:", ex);
 				}
-			}, _cancelSource.Token, atp, TaskScheduler.Current);
+			})); //, _cancelSource.Token, atp, TaskScheduler.Current);
+
+			extThread.Start();
 
 			_logger.Info("Waiting on task threads to finish...");
 			try
 			{
-				task.Wait(_cancelSource.Token);
+				extThread.Join();
+				//task.Wait(_cancelSource.Token);
 			}
-			catch(OperationCanceledException)
+			catch (ThreadAbortException) { }
+			catch (ThreadInterruptedException) { }
+			catch (ThreadStateException) { }
+			catch (OperationCanceledException)
 			{
 			}
 			_logger.Info("Task threads have all ended.");
