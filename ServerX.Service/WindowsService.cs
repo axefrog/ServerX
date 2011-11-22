@@ -66,6 +66,8 @@ namespace ServerX.Service
 		Logger _logger = LogManager.GetCurrentClassLogger();
 		protected override void OnStart(string[] args)
 		{
+			this.RequestAdditionalTime(120000);
+
 			try
 			{
 				_logger.Info("Service starting...\r\n");
