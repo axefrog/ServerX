@@ -130,11 +130,11 @@ namespace ServerX.ServiceConsole
 				handler(logLevel, source, message);
 		}
 
-		void OnExtensionNotificationReceived(string extID, string extName, string logLevel, string source, string message)
+		void OnExtensionNotificationReceived(Guid procID, string extID, string extName, string logLevel, string source, string message)
 		{
 			var handler = ExtensionNotificationReceived;
 			if(handler != null)
-				handler(extID, extName, logLevel, source, message);
+				handler(procID, extID, extName, logLevel, source, message);
 		}
 
 		void OnServiceDisconnected(ServiceManagerClient psc)

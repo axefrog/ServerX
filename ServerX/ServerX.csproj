@@ -82,6 +82,7 @@
     <Compile Include="ExtensionRunnerExitCode.cs" />
     <Compile Include="ExtensionProcessManager.cs" />
     <Compile Include="ExtensionsConfigFileManager.cs" />
+    <Compile Include="NotificationLogBuffer.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

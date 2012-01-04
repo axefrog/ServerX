@@ -60,6 +60,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -75,6 +76,7 @@
     <Compile Include="IServiceXBase.cs" />
     <Compile Include="JavaScriptInterface.cs" />
     <Compile Include="Mono.Options.cs" />
+    <Compile Include="NotificationLog.cs" />
     <Compile Include="PersistenceManager.cs" />
     <Compile Include="ServerExtension.cs" />
     <Compile Include="ExtensionActivator.cs" />

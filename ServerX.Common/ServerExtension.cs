@@ -73,7 +73,15 @@ namespace ServerX.Common
 		{
 			_logger.Trace("[" + ID + "] Run() called.");
 			RunCalled = true;
-			RunInternal(tokenSource);
+			try
+			{
+				RunInternal(tokenSource);
+			}
+			catch(Exception ex)
+			{
+				_logger.FatalException("Extension crashed!", ex);
+				throw;
+			}
 		}
 
 		protected abstract void RunInternal(CancellationTokenSource tokenSource);

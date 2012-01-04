@@ -71,7 +71,7 @@ namespace ServerX
 			{
 				var handler = ExtensionNotificationReceived;
 				if(handler != null)
-					handler(info.ExtensionID, info.Name, src, msg, lvl);
+					handler(info.ExtProcID, info.ExtensionID, info.Name, src, msg, lvl);
 			};
 
 			lock(_clients)

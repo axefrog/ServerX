@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ServiceModel;
-using NLog;
 
 namespace ServerX.Common
 {
@@ -75,6 +74,9 @@ namespace ServerX.Common
 
 		[OperationContract]
 		void NotifyExtensionServiceReady(Guid extProcID, string address);
+
+		[OperationContract]
+		NotificationLog[] ListNotificationLogs(long afterLogNumber, int maxToReturn, bool fromStart);
 	}
 
 	//[ServiceContract(Name = "ServiceManager", Namespace = "http://ServerX/ServiceManager", CallbackContract = typeof(IServiceManagerCallback), SessionMode = SessionMode.Allowed)]
@@ -85,6 +87,6 @@ namespace ServerX.Common
 	public interface IServiceManagerCallback : IServiceCallbackBase
 	{
 		[OperationContract(IsOneWay = true)]
-		void ServerExtensionNotify(string extID, string extName, string logLevel, string source, string message);
+		void ServerExtensionNotify(Guid procID, string extID, string extName, string logLevel, string source, string message);
 	}
 }

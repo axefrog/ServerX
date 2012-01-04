@@ -216,6 +216,12 @@ namespace ServerX
 			}).ToList();
 		}
 
+		public string GetExtensionDirectoryName(Guid procID)
+		{
+			ProcessInfo proc;
+			return _processes.TryGetValue(procID, out proc) ? proc.DirectoryName : null;
+		}
+
 		public Guid? Execute(string dirName, params string[] extensionIDs)
 		{
 			ProcessInfo info;

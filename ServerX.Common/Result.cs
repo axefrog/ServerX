@@ -20,6 +20,7 @@ namespace ServerX.Common
 
 		protected Result()
 		{
+			Success = true;
 		}
 
 		public Result(bool success, string message)

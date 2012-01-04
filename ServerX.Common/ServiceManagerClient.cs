@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.ServiceModel;
-using NLog;
+using System.Web;
 
 namespace ServerX.Common
 {
@@ -32,11 +33,11 @@ namespace ServerX.Common
 				if(handler != null)
 					handler(src, msg, lvl);
 			};
-			callback.ExtensionNotificationReceived += (extID, extName, source, msg, level) =>
+			callback.ExtensionNotificationReceived += (procID, extID, extName, source, msg, level) =>
 			{
 				var handler = ExtensionNotificationReceived;
 				if(handler != null)
-					handler(extID, extName, source, msg, level);
+					handler(procID, extID, extName, source, msg, level);
 			};
 		}
 
@@ -157,18 +158,61 @@ namespace ServerX.Common
 		{
 			Channel.NotifyExtensionServiceReady(extProcID, address);
 		}
+
+		public NotificationLog[] ListNotificationLogs(long afterLogNumber, int maxToReturn, bool fromStart)
+		{
+			return Channel.ListNotificationLogs(afterLogNumber, maxToReturn, fromStart);
+		}
+
+		#region Pool (For HTTP requests)
+		static ConcurrentBag<ServiceManagerClient> GetPool()
+		{
+			HttpContext.Current.Application.Lock();
+			try
+			{
+				var pool = HttpContext.Current.Application["ServiceManagerClient"] as ConcurrentBag<ServiceManagerClient>;
+				if (pool == null)
+					HttpContext.Current.Application["ServiceManagerClient"] = pool = new ConcurrentBag<ServiceManagerClient>();
+				return pool;
+			}
+			finally
+			{
+				HttpContext.Current.Application.UnLock();
+			}
+		}
+
+		public static ServiceManagerClient Obtain()
+		{
+			if (HttpContext.Current == null)
+				throw new InvalidOperationException("This method is only valid for web calls (HttpContext.Current != null)");
+			var pool = GetPool();
+			ServiceManagerClient client;
+			while (pool.TryTake(out client))
+			{
+				if (client.State != CommunicationState.Faulted && !client.TimedOut)
+					return client;
+			}
+			return new ServiceManagerClient("ServiceManagerClient." + (HttpContext.Current.Request.IsLocal ? "Local" : "Remote"));
+		}
+
+		public static void Release(ServiceManagerClient client)
+		{
+			if (client.State != CommunicationState.Faulted && !client.TimedOut)
+				GetPool().Add(client);
+		}
+		#endregion
 	}
 
 	public class ServiceManagerCallback : IServiceManagerCallback
 	{
-		public void ServerExtensionNotify(string extID, string extName, string logLevel, string source, string message)
+		public void ServerExtensionNotify(Guid procID, string extID, string extName, string logLevel, string source, string message)
 		{
 			var handler = ExtensionNotificationReceived;
 			if(handler != null)
-				handler(extID, extName, logLevel, source, message);
+				handler(procID, extID, extName, logLevel, source, message);
 		}
 
-		public delegate void ExtensionNotificationHandler(string extID, string extName, string logLevel, string source, string message);
+		public delegate void ExtensionNotificationHandler(Guid procID, string extID, string extName, string logLevel, string source, string message);
 		public event ExtensionNotificationHandler ExtensionNotificationReceived;
 
 		public void Notify(string logLevel, string source, string message)

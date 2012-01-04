@@ -1,9 +1,10 @@
 ﻿using System;
-using System.Configuration;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.ServiceModel;
-using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using ServerX.Common;
 using NLog;
 
@@ -21,12 +22,13 @@ namespace ServerX
 		private CronManager _cronMgr;
 		private Logger _logger;
 
+
 		public ServiceManager()
 		{
 			ServiceManagerNotificationTarget.ServiceManager = this;
 			_logger = LogManager.GetCurrentClassLogger();
 
-			ExtensionNotificationReceived += (extID, extName, level, source, message) => CallbackEachClient<IServiceManagerCallback>(c => c.ServerExtensionNotify(extID, extName, level, source, message));
+			ExtensionNotificationReceived += (procID, extID, extName, level, source, message) => CallbackEachClient<IServiceManagerCallback>(c => c.ServerExtensionNotify(procID, extID, extName, level, source, message));
 			ServiceManagerNotificationReceived += (level, source, message) => CallbackEachClient<IServiceManagerCallback>(c => c.Notify(level, source, message));
 
 			_extensionsBaseDir = new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extensions"));
@@ -41,26 +43,29 @@ namespace ServerX
 			);
 
 			_extClientMgr = new ExtensionClientManager(_extProcMgr);
-			_extClientMgr.ExtensionNotificationReceived += (extID, extName, level, source, message) =>
+			_extClientMgr.ExtensionNotificationReceived += (procID, extID, extName, level, source, message) =>
 			{
+				NotificationLogBuffer.Add(procID, _extProcMgr.GetExtensionDirectoryName(procID), extID, extName, level, source, message);
 				var handler = ExtensionNotificationReceived;
 				if(handler != null)
-					handler(extID, extName, level, source, message);
+					handler(procID, extID, extName, level, source, message);
 			};
 
 			_extProcMgr.StartMonitoring();
 
 			_extCfgMgr = new ExtensionsConfigFileManager(_extProcMgr);
+			Task.Factory.StartNew(() => _extCfgMgr.Init());
 
 			_cmdRunner = new CommandRunner(this, _extClientMgr);
 			_cronMgr = new CronManager(this);
 		}
 
-		private void Notify(LogLevel level, string src, string msg)
+		private void Notify(string level, string src, string msg)
 		{
+			NotificationLogBuffer.Add(null, null, null, null, level, src, msg);
 			var handler = ServiceManagerNotificationReceived;
 			if(handler != null)
-				handler(level.Name, src, msg);
+				handler(level, src, msg);
 		}
 
 		public event ServiceManagerCallback.ExtensionNotificationHandler ExtensionNotificationReceived;
@@ -73,7 +78,7 @@ namespace ServerX
 
 		internal void CreateNotification(string level, string source, string message)
 		{
-			CallbackEachClient<IServiceManagerCallback>(c => c.Notify(level, source, message));
+			Notify(level, source, message);
 		}
 
 		public DateTime GetServerTime()
@@ -198,8 +203,13 @@ namespace ServerX
 			{
 				var info = _extClientMgr.TryConnect(extProcID, address);
 				if(info != null)
-					Notify(LogLevel.Info, info.Name, "Extension connected and ready.");
+					Notify(LogLevel.Info.Name, info.Name, "Extension connected and ready.");
 			}
+		}
+
+		public NotificationLog[] ListNotificationLogs(long afterLogNumber, int maxToReturn, bool fromStart)
+		{
+			return NotificationLogBuffer.List(afterLogNumber, maxToReturn, fromStart);
 		}
 
 		public virtual void Dispose()

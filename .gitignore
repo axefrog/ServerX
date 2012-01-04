@@ -6,6 +6,7 @@ obj/*
 *.csuser
 *.suo
 *.ReSharper
+*.DotSettings
 *.user
 *.tmp
 *.db

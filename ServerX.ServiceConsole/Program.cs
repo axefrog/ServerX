@@ -75,7 +75,7 @@ namespace ServerX.ServiceConsole
 			WriteNotification("Service Manager", ConsoleColor.Cyan, logLevel, source, message);
 		}
 
-		void OnExtensionNotificationReceived(string extID, string extName, string logLevel, string source, string message)
+		void OnExtensionNotificationReceived(Guid procID, string extID, string extName, string logLevel, string source, string message)
 		{
 			WriteNotification(extName, ConsoleColor.Magenta, logLevel, source, message);
 		}

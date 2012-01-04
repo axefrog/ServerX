@@ -19,10 +19,9 @@ namespace ServerX
 		public ExtensionsConfigFileManager(ExtensionProcessManager extProcMgr)
 		{
 			_extProcMgr = extProcMgr;
-			Init();
 		}
 
-		void Init()
+		public void Init()
 		{
 			_file.Refresh();
 			if(!_file.Exists)
