@@ -154,7 +154,7 @@ namespace ServerX
 									p.Process.Start();
 									logger.Info("Process " + DescribeProcess(p) + " exited with code " + exitCode + " and so has been restarted");
 								}
-								else if(p.Timeout < DateTime.Now)
+								else if(p.Timeout < DateTime.Now && !p.RequestShutdown)
 								{
 									logger.Warn("Process " + DescribeProcess(p) + " did not call back inside the timeout period and will be restarted... ");
 									p.Process.Kill();
