@@ -32,3 +32,4 @@ packages/*
 *.vshost.exe
 Working
 Working/*
+ServerX.ExtensionRunner/app.config
