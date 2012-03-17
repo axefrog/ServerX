@@ -1,8 +1,4 @@
-N   N EEEEE X   X TTTTT
-NN  N E      X X    T
-N N N EEEEE   X     T
-N  NN E      X X    T
-N   N EEEEE X   X   T
+## MANY OF THESE NOTES ARE OBSOLETE AND/OR INACCURATE
 
 NEXT:
 	ServerExtensionsActivator:

@@ -6,6 +6,8 @@ obj/*
 *.csuser
 *.suo
 *.ReSharper
+_ReSharper.*
+_ReSharper.*/*
 *.DotSettings
 *.user
 *.tmp
@@ -28,3 +30,5 @@ packages/*
 *.pidb
 *.userprefs
 *.vshost.exe
+Working
+Working/*
