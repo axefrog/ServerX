@@ -25,7 +25,6 @@ Logs
 Logs/*
 ErrorLogs
 ErrorLogs/*
-packages/*/*
 *.pidb
 *.userprefs
 *.vshost.exe
