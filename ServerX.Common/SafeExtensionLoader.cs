@@ -16,12 +16,12 @@ namespace ServerX.Common
 			_tokenSrc = tokenSrc;
 			_extensionsPath = Path.Combine(extensionsBaseDir, subdirName);
 			var setup = new AppDomainSetup
-			{
-				ApplicationBase = _extensionsPath,
-				PrivateBinPath = _extensionsPath,
-				ShadowCopyFiles = "true",
-				ShadowCopyDirectories = _extensionsPath
-			};
+						{
+							ApplicationBase = _extensionsPath,
+							PrivateBinPath = _extensionsPath,
+							ShadowCopyFiles = "true",
+							ShadowCopyDirectories = _extensionsPath
+						};
 			_appdomain = AppDomain.CreateDomain("ExtensionDirectoryLoader." + subdirName + "." + Guid.NewGuid(), null, setup);
 			_extActivator = (IExtensionActivator)_appdomain.CreateInstanceAndUnwrap("ServerX.Common", "ServerX.Common.ExtensionActivator");
 			_extActivator.Init(subdirName, parentProcessID);

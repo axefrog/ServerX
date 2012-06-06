@@ -93,8 +93,9 @@ namespace ServerX
 				using(var loader = new SafeExtensionLoader(_extensionsBasePath, dirName, "", null))
 					foundExtensionIDs = loader.AvailableExtensions.Select(e => e.ExtensionID).ToArray();
 			}
-			catch(FileNotFoundException)
+			catch(FileNotFoundException ex)
 			{
+				_logger.Debug("Directory not found: " + Path.Combine(_extensionsBasePath, dirName));
 				_logger.Error("Unable to start extension process - the extension subdirectory \"" + dirName + "\" does not exist or does not contain a valid set of extension assemblies.");
 				return null;
 			}

@@ -26,8 +26,6 @@ namespace ServerX.Service
 				Environment.CurrentDirectory = ConfigurationManager.AppSettings["DataDirectory"] ?? AppDomain.CurrentDomain.BaseDirectory;
 				var prmsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ServiceParams.txt");
 				var prms = new JavaScriptSerializer().Deserialize<ServiceInstallParams>(File.ReadAllText(prmsPath));
-				try { File.Delete(prmsPath); }
-				catch { }
 
 				AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
 				TaskScheduler.UnobservedTaskException += OnTaskSchedulerUnobservedTaskException;

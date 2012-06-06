@@ -32,59 +32,75 @@ namespace ServerX.Common
 
 		public void Init(string dirName, string parentProcessId)
 		{
-			var exeDir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.FullName;
-			GlobalDiagnosticsContext.Set("ExeBaseDir", exeDir);
-			GlobalDiagnosticsContext.Set("SubDirName", dirName);
-			GlobalDiagnosticsContext.Set("ParentProcess", parentProcessId);
-
-			ConfigurationItemFactory.Default.Targets.RegisterDefinition("ServiceManager", typeof(ServiceManagerTarget));
-			ConfigurationItemFactory.Default.Targets.RegisterDefinition("ServiceManagerNotification", typeof(NLog.Targets.NullTarget));
-
-			_dirName = dirName;
-			_logger = LogManager.GetCurrentClassLogger();
-
-			AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
-			TaskScheduler.UnobservedTaskException += OnTaskSchedulerUnobservedTaskException;
-
-			var list = new List<ExtensionInfo>();
-			var files = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory).GetFiles("*.dll");
-			var asmExclusionsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "loader.exclude.txt");
-			var exclusions = new HashSet<string>();
-			if(File.Exists(asmExclusionsPath))
-				exclusions = new HashSet<string>(
-				File.ReadAllLines(asmExclusionsPath)
-					.Select(s => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, s).ToLower())
-					.Where(File.Exists));
-
-			foreach(var file in files)
+			try
 			{
-				if(exclusions.Contains(file.FullName.ToLower()))
-					continue;
-				try
+				var exeDir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.FullName;
+				GlobalDiagnosticsContext.Set("ExeBaseDir", exeDir);
+				GlobalDiagnosticsContext.Set("SubDirName", dirName);
+				GlobalDiagnosticsContext.Set("ParentProcess", parentProcessId);
+
+				ConfigurationItemFactory.Default.Targets.RegisterDefinition("ServiceManager", typeof(ServiceManagerTarget));
+				ConfigurationItemFactory.Default.Targets.RegisterDefinition("ServiceManagerNotification", typeof(NLog.Targets.NullTarget));
+
+				_dirName = dirName;
+				_logger = LogManager.GetCurrentClassLogger();
+
+				AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
+				TaskScheduler.UnobservedTaskException += OnTaskSchedulerUnobservedTaskException;
+
+				var list = new List<ExtensionInfo>();
+				var files = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory).GetFiles("*.dll");
+				var asmExclusionsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "loader.exclude.txt");
+				var exclusions = new HashSet<string>();
+				if (File.Exists(asmExclusionsPath))
+					exclusions = new HashSet<string>(
+						File.ReadAllLines(asmExclusionsPath)
+							.Select(s => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, s).ToLower())
+							.Where(File.Exists));
+
+				foreach (var file in files)
 				{
-					var asm = Assembly.Load(Path.GetFileNameWithoutExtension(file.Name));
-					var types = (from t in asm.GetTypes()
-								 where t.GetInterfaces().Any(i => i == typeof(IServerExtension)) && t.IsClass && !t.IsAbstract && t.GetConstructors().Where(i => i.GetParameters().Count() == 0).Any()
-								 select t);
-					var typeMap = (from t in types
-								   select new { Ext = (IServerExtension)Activator.CreateInstance(t) }).ToDictionary(k => k.Ext.ID, v => v.Ext);
-					list.AddRange(
-						typeMap.Values.Select(ext => new ExtensionInfo
-						{
-							ExtensionID = ext.ID,
-							Name = ext.Name,
-							Description = ext.Description,
-							AssemblyQualifiedName = ext.GetType().AssemblyQualifiedName
-						})
-					);
+					if (exclusions.Contains(file.FullName.ToLower()))
+						continue;
+					try
+					{
+						var asm = Assembly.Load(Path.GetFileNameWithoutExtension(file.Name));
+						var types = (from t in asm.GetTypes()
+									 where t.GetInterfaces().Any(i => i == typeof(IServerExtension)) && t.IsClass && !t.IsAbstract && t.GetConstructors().Where(i => i.GetParameters().Count() == 0).Any()
+									 select t);
+						var typeMap = (from t in types
+									   select new { Ext = (IServerExtension)Activator.CreateInstance(t) }).ToDictionary(k => k.Ext.ID, v => v.Ext);
+						list.AddRange(
+							typeMap.Values.Select(ext => new ExtensionInfo
+														 {
+															 ExtensionID = ext.ID,
+															 Name = ext.Name,
+															 Description = ext.Description,
+															 AssemblyQualifiedName = ext.GetType().AssemblyQualifiedName
+														 })
+							);
+					}
+					catch (ReflectionTypeLoadException ex)
+					{
+						_logger.Warn("Unable to load: " + file.Name);
+						foreach(var lx in ex.LoaderExceptions)
+							_logger.Warn(" => " + lx.Message);
+						continue;
+					}
+					catch (BadImageFormatException)
+					{
+						continue;
+					}
 				}
-				catch(BadImageFormatException)
-				{
-					continue;
-				}
+				_infos = list.ToArray();
+				_logger.Info("Obtained info for " + _infos.Length + " available extensions");
 			}
-			_infos = list.ToArray();
-			_logger.Info("Obtained info for " + _infos.Length + " available extensions");
+			catch (Exception ex)
+			{
+				_logger.FatalException("Exception while activating exception: ", ex);
+				Console.WriteLine(ex.ToString());
+				throw;
+			}
 		}
 
 		public ExtensionInfo[] Extensions
